@@ -121,7 +121,9 @@
               :src="`/idol/headImg/${getAvatarName(tweet.member)}.png`"
               draggable="false"
               @dragstart.prevent
-              style="margin-right: 8px;"
+              style="margin-right: 8px; cursor: pointer;"
+              @click="openMemberTwitterPage(tweet.member)"
+              :title="`点击访问 @${tweet.member} 的推特主页`"
           />
           <div>
             <div style="font-weight: bold; font-size: 14px; color: #333;">
@@ -145,19 +147,34 @@
         <!-- 显示推文来源信息 -->
         <div v-if="tweet.source_user && tweet.source_user !== tweet.member"
              style="margin-top: 8px; padding: 8px; background-color: #f5f5f5; border-radius: 4px; font-size: 12px; color: #666;">
-          📍 此推文来自 <strong>@{{ tweet.source_user }}</strong> 的时间线
+          📍 此推文来自 <strong style="cursor: pointer; color: #409EFF;" @click="openMemberTwitterPage(tweet.source_user)">@{{ tweet.source_user }}</strong> 的时间线
         </div>
 
         <!-- 图片显示 -->
         <div v-if="tweet.media && tweet.media.length > 0" style="margin-top: 8px">
           <div v-for="(img, i) in tweet.media" :key="i" style="margin-bottom: 8px;">
+            <!-- 对于card_img格式的Nitter图片，使用img标签直接显示原始URL -->
+            <img
+                v-if="isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
+                :src="img"
+                :alt="`图片 ${i + 1}`"
+                loading="lazy"
+                style="width: 100%; border-radius: 8px; cursor: pointer;"
+                @click="openImageInNewTab(img)"
+                @error="handleImageError(tweet.id, i)"
+                @load="handleImageLoad(tweet.id, i)"
+            />
+            <!-- 对于其他图片URL，使用el-image组件 -->
             <el-image
+                v-else-if="!isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
                 :src="img"
                 style="width: 100%; border-radius: 8px; cursor: pointer;"
                 :preview-src-list="tweet.media"
                 :initial-index="i"
                 fit="cover"
                 :alt="`图片 ${i + 1}`"
+                @error="handleImageError(tweet.id, i)"
+                @load="handleImageLoad(tweet.id, i)"
             />
           </div>
         </div>
@@ -215,7 +232,8 @@ export default {
       twitterContent: [],                       //推文内容
       memberDrawerVisible: false,                //推文抽屉
       selectedFilterMember: null,               //当前筛选的成员
-      filteredTwitterContent: []               //筛选后的推文内容
+      filteredTwitterContent: [],               //筛选后的推文内容
+      imageLoadErrors: {}                       // 用于跟踪图片加载失败
     };
   },
   methods: {
@@ -350,7 +368,7 @@ export default {
         }
       }());
     },
-    //获取头像名称
+    // 获取头像名称
     getAvatarName(memberTwitter) {
       // 如果是官方账号，返回官方头像
       if (memberTwitter.toLowerCase() === OFFICIAL_ACCOUNT.toLowerCase()) {
@@ -362,17 +380,15 @@ export default {
         return member.name;
       }
       // 如果找不到对应的成员，返回默认头像
-      console.log(`未找到推文作者 ${memberTwitter} 对应的头像`);
       return 'default';
     },
-    //自动拉取推文
+    // 自动拉取推文
     async getTwitterContent(){
       $axios.post('/TwitterController/getTwitterContent').then(res=>{
         this.twitterContent = res.data
         this.filterByMember(null) // 初始化筛选为全部
-        console.log(`加载推文数据: ${this.twitterContent.length} 条`);
       }).catch(err=>{
-        console.log(err)
+        console.error('获取推文数据失败:', err)
       })
     },
     //筛选推文
@@ -382,18 +398,15 @@ export default {
         // 根据成员名字找到对应的twitter用户名
         const member = this.members.find(m => m.name === memberName);
         if (member) {
-          console.log(`筛选成员: ${memberName}, Twitter用户名: ${member.twitter}`);
           // 使用twitter字段来筛选推文
           this.filteredTwitterContent = this.twitterContent.filter(tweet =>
               tweet.member.toLowerCase() === member.twitter.toLowerCase()
           );
-          console.log(`筛选结果: 找到 ${this.filteredTwitterContent.length} 条推文`);
         } else {
-          console.log(`未找到成员: ${memberName}`);
           this.filteredTwitterContent = [];
         }
       } else {
-        console.log('显示所有成员推文');
+        // 显示所有成员推文
         this.filteredTwitterContent = this.twitterContent;
       }
     },
@@ -404,6 +417,26 @@ export default {
       } else {
         this.filterByMember(memberName); // 点击不同成员头像，显示该成员推文
       }
+    },
+    // 判断是否为card_img格式的图片URL
+    isCardImgUrl(url) {
+      return url && url.includes('nitter.kuuro.net/pic/card_img');
+    },
+    // 在新标签页中打开图片
+    openImageInNewTab(url) {
+      window.open(url, '_blank');
+    },
+    // 处理图片加载失败
+    handleImageError(tweetId, index) {
+      this.imageLoadErrors[`${tweetId}-${index}`] = true;
+    },
+    // 处理图片加载成功
+    handleImageLoad(tweetId, index) {
+      delete this.imageLoadErrors[`${tweetId}-${index}`];
+    },
+    // 打开成员推特主页
+    openMemberTwitterPage(memberTwitter) {
+      window.open(`https://x.com/${memberTwitter}`, '_blank');
     }
   },
   mounted() {

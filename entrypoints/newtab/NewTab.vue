@@ -70,17 +70,51 @@
     <!-- 推文抽屉 -->
     <el-drawer
         v-model="memberDrawerVisible"
-        title=""
+        title="成员动态"
         direction="rtl"
         size="30%"
+        :header-style="{ padding: '4px 16px', fontSize: '16px', fontWeight: 'bold' }"
+        :body-style="{ padding: '0' }"
     >
-      <div v-if="twitterContent.length === 0" style="text-align: center; padding: 20px; color: #666;">
-        暂无推文数据
+      <!-- 成员头像筛选器 -->
+      <div style="padding: 0px 16px 4px 16px; border-bottom: 1px solid #eee;">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <!-- 循环显示所有成员头像 -->
+          <div
+              v-for="member in members"
+              :key="member.name"
+              @click="toggleMemberFilter(member.name)"
+              :style="{
+                cursor: 'pointer',
+                padding: '8px',
+                borderRadius: '8px',
+                border: '2px solid',
+                borderColor: selectedFilterMember === member.name ? '#409EFF' : '#ddd',
+                backgroundColor: selectedFilterMember === member.name ? '#f0f8ff' : '#fff'
+              }"
+              :title="selectedFilterMember === member.name ? '点击显示全部推文' : `点击只显示 @${member.name} 的推文`"
+          >
+            <el-avatar
+                :src="`/idol/headImg/${member.name}.png`"
+                size="40"
+                style="border: 1px solid #ddd;"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div v-if="filteredTwitterContent.length === 0" style="text-align: center; padding: 20px; color: #666;">
+        <div v-if="twitterContent.length === 0">暂无推文数据</div>
+        <div v-else-if="selectedFilterMember">@{{ selectedFilterMember }} 暂无推文</div>
+        <div v-else>暂无推文数据</div>
       </div>
       <div
-          v-for="(tweet, index) in twitterContent"
+          v-for="(tweet, index) in filteredTwitterContent"
           :key="index"
-          style="margin-bottom: 16px"
+          :style="{
+            marginBottom: '16px',
+            marginTop: index === 0 ? '16px' : '0'
+          }"
       >
         <div style="display: flex; align-items: center; margin-bottom: 6px;">
           <el-avatar
@@ -145,6 +179,19 @@
 
         <el-divider />
       </div>
+
+      <!-- 筛选状态提示 -->
+      <div v-if="selectedFilterMember && filteredTwitterContent.length > 0" style="padding: 16px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #eee;">
+        当前显示：@{{ selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
+        <el-button
+            type="text"
+            size="small"
+            @click="filterByMember(null)"
+            style="margin-left: 8px;"
+        >
+          显示全部
+        </el-button>
+      </div>
     </el-drawer>
   </div>
 </template>
@@ -166,7 +213,9 @@ export default {
       searchIconIndex: 0,                       //搜索框默认图标下标
 
       twitterContent: [],                       //推文内容
-      memberDrawerVisible: false                //推文抽屉
+      memberDrawerVisible: false,                //推文抽屉
+      selectedFilterMember: null,               //当前筛选的成员
+      filteredTwitterContent: []               //筛选后的推文内容
     };
   },
   methods: {
@@ -320,9 +369,41 @@ export default {
     async getTwitterContent(){
       $axios.post('/TwitterController/getTwitterContent').then(res=>{
         this.twitterContent = res.data
+        this.filterByMember(null) // 初始化筛选为全部
+        console.log(`加载推文数据: ${this.twitterContent.length} 条`);
       }).catch(err=>{
         console.log(err)
       })
+    },
+    //筛选推文
+    filterByMember(memberName) {
+      this.selectedFilterMember = memberName;
+      if (memberName) {
+        // 根据成员名字找到对应的twitter用户名
+        const member = this.members.find(m => m.name === memberName);
+        if (member) {
+          console.log(`筛选成员: ${memberName}, Twitter用户名: ${member.twitter}`);
+          // 使用twitter字段来筛选推文
+          this.filteredTwitterContent = this.twitterContent.filter(tweet =>
+              tweet.member.toLowerCase() === member.twitter.toLowerCase()
+          );
+          console.log(`筛选结果: 找到 ${this.filteredTwitterContent.length} 条推文`);
+        } else {
+          console.log(`未找到成员: ${memberName}`);
+          this.filteredTwitterContent = [];
+        }
+      } else {
+        console.log('显示所有成员推文');
+        this.filteredTwitterContent = this.twitterContent;
+      }
+    },
+    //切换成员筛选
+    toggleMemberFilter(memberName) {
+      if (this.selectedFilterMember === memberName) {
+        this.filterByMember(null); // 点击同一成员头像，显示全部推文
+      } else {
+        this.filterByMember(memberName); // 点击不同成员头像，显示该成员推文
+      }
     }
   },
   mounted() {

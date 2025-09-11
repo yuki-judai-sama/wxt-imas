@@ -278,18 +278,25 @@ export default {
     },
     //推文转换链接
     convertLinks(text) {
-      // 先转义HTML字符
-      let processedText = text
+      if (!text) return '';
+
+      // 1) 先移除引用推文链接：x.com / twitter.com / 任意 nitter* 域名 / 以及 *.kuuro.net（含无协议、可紧贴文字）
+      const quoteLinkRegex = /(?:(?:https?:\/\/)?)(?:x\.com|twitter\.com|(?:[a-zA-Z0-9-]+\.)*nitter[^\s\/]*|(?:[a-zA-Z0-9-]+\.)*kuuro\.net)\/[A-Za-z0-9_]+\/status\/\d+[^\s]*/gi;
+      const withoutQuoteLinks = text.replace(quoteLinkRegex, '');
+
+      // 2) 转义 HTML 与换行
+      let processedText = withoutQuoteLinks
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br/>');
+          .replace(/\n/g, '<br/>')
+          .trim();
 
-      // 先处理链接，避免与话题标签冲突
-      processedText = processedText.replace(/(https?:\/\/[a-zA-Z0-9\-._~:/?#[\]@!$&'()*+,;=%]+)/g, (match, url) => {
+      // 3) 普通链接高亮（已移除需要隐藏的引用链接）
+      processedText = processedText.replace(/(https?:\/\/[a-zA-Z0-9\-._~:\/?#[\]@!$&'()*+,;=%]+)/g, (match, url) => {
         return `<a href="${url}" target="_blank" style="color: #409EFF;">${url}</a>`;
       });
 
-      // 再处理话题标签，但排除已经是链接的部分
+      // 4) 话题标签高亮（避免影响已转成链接的部分）
       processedText = processedText.replace(/#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)(?![^<]*<\/a>)/g, (match, hashtag) => {
         return `<a href="https://x.com/search?q=%23${hashtag}" target="_blank" style="color: #409EFF;">#${hashtag}</a>`;
       });

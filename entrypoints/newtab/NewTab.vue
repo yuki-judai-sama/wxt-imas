@@ -453,7 +453,7 @@ export default {
     //监听全局键盘事件
     window.addEventListener("keydown", this.keyDown);
     //鼠标点击特效
-    this.clickBubbling();
+    // this.clickBubbling();
     //自动拉取推文
     this.getTwitterContent();
   },

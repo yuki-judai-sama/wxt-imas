@@ -44,29 +44,6 @@
         </template>
       </el-input>
     </div>
-    <!--********************************************************************************************************************************-->
-    <!--主题选择器-->
-    <div class="memberSelectStyle">
-      <el-select v-model="selectMember" style="width: 150px;" @change="changeMemberTheme" placeholder="选择成员">
-        <el-option
-            v-for="item in members"
-            :key="item.name"
-            :label="item.name"
-            :value="item.name"
-        >
-          <div style="display: flex; align-items: center;">
-            <img
-                :src="`/idol/headImg/${item.name}.png`"
-                alt="avatar"
-                style="height: 25px; width: 25px; border-radius: 50%; margin-right: 8px;"
-                draggable="false"
-            />
-            <span>{{ item.name }}</span>
-          </div>
-        </el-option>
-      </el-select>
-    </div>
-    <!--********************************************************************************************************************************-->
     <!-- 推文抽屉 -->
     <el-drawer
         v-model="memberDrawerVisible"
@@ -165,17 +142,17 @@
                 @load="handleImageLoad(tweet.id, i)"
             />
             <!-- 对于其他图片URL，使用el-image组件 -->
-            <el-image
+          <el-image
                 v-else-if="!isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
-                :src="img"
+              :src="img"
                 style="width: 100%; border-radius: 8px; cursor: pointer;"
                 :preview-src-list="tweet.media"
                 :initial-index="i"
-                fit="cover"
+              fit="cover"
                 :alt="`图片 ${i + 1}`"
                 @error="handleImageError(tweet.id, i)"
                 @load="handleImageLoad(tweet.id, i)"
-            />
+          />
           </div>
         </div>
 
@@ -224,7 +201,7 @@ export default {
       thisWebWidth: 0,                          //当前页面宽度
       thisWebHeight: 0,                         //当前页面高度
 
-      selectMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,  //默认选择成员
+      selectMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,  //默认选择成员（用于主题显示）
 
       searchValue: null,                        //搜索框输入内容
       searchIconIndex: 0,                       //搜索框默认图标下标
@@ -268,14 +245,6 @@ export default {
         window.open(this.members[index - 1].link, '_blank');
       }
     },
-    //变更成员主题
-    async changeMemberTheme(selected) {
-      this.selectMember = selected;
-      this.selectMemberThemeIndex = this.members.findIndex(m => m.name === selected);
-
-      // 保存用户选择到localStorage
-      localStorage.setItem('defaultMember', selected);
-    },
     //推文转换链接
     convertLinks(text) {
       if (!text) return '';
@@ -290,17 +259,17 @@ export default {
           .replace(/>/g, '&gt;')
           .replace(/\n/g, '<br/>')
           .trim();
-
+      
       // 3) 普通链接高亮（已移除需要隐藏的引用链接）
       processedText = processedText.replace(/(https?:\/\/[a-zA-Z0-9\-._~:\/?#[\]@!$&'()*+,;=%]+)/g, (match, url) => {
         return `<a href="${url}" target="_blank" style="color: #409EFF;">${url}</a>`;
       });
-
+      
       // 4) 话题标签高亮（避免影响已转成链接的部分）
       processedText = processedText.replace(/#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)(?![^<]*<\/a>)/g, (match, hashtag) => {
         return `<a href="https://x.com/search?q=%23${hashtag}" target="_blank" style="color: #409EFF;">#${hashtag}</a>`;
       });
-
+      
       return processedText;
     },
     //推文转换时间
@@ -444,6 +413,62 @@ export default {
     // 打开成员推特主页
     openMemberTwitterPage(memberTwitter) {
       window.open(`https://x.com/${memberTwitter}`, '_blank');
+    },
+    // 设置主题变更监听器
+    setupThemeChangeListener() {
+      // 监听 localStorage 事件（最可靠的方案）
+      const localStorageListener = (e) => {
+        if (e.key === 'defaultMember' && e.newValue) {
+          this.handleThemeChange(e.newValue);
+        }
+      };
+      
+      window.addEventListener('storage', localStorageListener);
+      this.localStorageListener = localStorageListener;
+    },
+    // 处理主题变更
+    handleThemeChange(memberName) {
+      // 检查成员是否存在
+      const member = this.members.find(m => m.name === memberName);
+      if (!member) {
+        return;
+      }
+      
+      // 更新数据
+      this.selectMember = memberName;
+      localStorage.setItem('defaultMember', memberName);
+      
+      // 立即更新样式
+      this.updateThemeStyles(memberName, member);
+      
+      // 强制重新渲染
+      this.$forceUpdate();
+    },
+    // 更新主题样式
+    updateThemeStyles(memberName, member) {
+      // 确保背景图片更新
+      const mainElement = document.querySelector('.mainStyle');
+      if (mainElement) {
+        mainElement.style.backgroundImage = `url('/idol/${memberName}.png')`;
+        mainElement.style.backgroundSize = 'cover';
+        mainElement.style.backgroundRepeat = 'no-repeat';
+      }
+      
+      // 确保导航栏颜色更新
+      const menuElement = document.querySelector('.el-menu--horizontal');
+      if (menuElement) {
+        const hex = member.color;
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        menuElement.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
+      }
+      
+      // 确保选择器也更新
+      const selectElement = document.querySelector('.el-select .el-input__inner');
+      if (selectElement) {
+        selectElement.value = memberName;
+      }
     }
   },
   mounted() {
@@ -456,10 +481,18 @@ export default {
     // this.clickBubbling();
     //自动拉取推文
     this.getTwitterContent();
+    
+    // 监听主题变更消息
+    this.setupThemeChangeListener();
   },
   //销毁全局监听事件
   beforeUnmount() {
     window.removeEventListener("keydown", this.keyDown);
+    
+    // 清理 localStorage 监听器
+    if (this.localStorageListener) {
+      window.removeEventListener('storage', this.localStorageListener);
+    }
   },
   computed: {
     // 成员列表
@@ -503,12 +536,6 @@ export default {
 <!--*****************************************************************************************************************-->
 <style scoped>
 
-.memberSelectStyle {                /*选择成员主题级联选择器样式*/
-  position: fixed;
-  bottom: 20px;        /* 距离底部20px */
-  left: 20px;          /* 距离左边20px */
-  transform: none;     /* 取消水平居中 */
-}
 ::v-deep(.el-menu--horizontal) {    /*删除menu自带外边框*/
   border-bottom: none !important;
   box-shadow: none !important;

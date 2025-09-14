@@ -8,6 +8,7 @@
           src="/icon/学マス-logo.png" 
           alt="学マス" 
           class="logo"
+          draggable="false"
         />
         <h2 class="title">学マス小插件</h2>
       </div>
@@ -25,6 +26,7 @@
                 :src="`/idol/headImg/${selectedMember}.png`" 
                 class="theme-avatar"
                 style="width: 50px; height: 50px; border-radius: 50%;"
+                draggable="false"
               />
               <h3 class="theme-name">{{ selectedMember }}</h3>
             </div>
@@ -49,6 +51,7 @@
                  :src="`/idol/headImg/${member.name}.png`" 
                  class="member-avatar"
                  style="width: 24px; height: 24px; border-radius: 50%;"
+                 draggable="false"
                />
                <span class="member-name">{{ member.name }}</span>
              </div>

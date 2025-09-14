@@ -25,23 +25,35 @@
       </el-menu-item>
     </el-menu>
     
+    <!-- 时间显示区域 - 输入框上方 -->
+    <div class="time-container">
+      <div class="time-display">
+        <div class="time-main">{{ currentTime.time }}</div>
+        <div class="time-date">{{ currentTime.date }}</div>
+      </div>
+    </div>
+    
     <!-- 搜索输入框 -->
-    <div class="inputStyle">
-      <el-input
-          v-model="searchValue"
-          style="width: 400px; --el-input-height: 35px;"
-          size="large"
-          placeholder="Enter键搜索,Tab键切换搜索引擎"
-          ref="searchInput"
-      >
-        <template #prefix>
+    <div class="search-container">
+      <div class="search-wrapper" :class="{ 'focused': searchFocused }">
+        <div class="search-icon">
           <img
               :src="`/icon/${searchEngines[searchIconIndex].name}.png`"
-              :style="{ height: '25px', width: '25px' }"
+              :style="{ height: '20px', width: '20px' }"
               draggable="false"
           />
-        </template>
-      </el-input>
+    </div>
+        <input
+            v-model="searchValue"
+            class="search-input"
+            placeholder="Enter键搜索,Tab键切换搜索引擎"
+            ref="searchInput"
+            @focus="handleSearchFocus"
+            @blur="handleSearchBlur"
+            @keydown="keyDown"
+        />
+        <div class="search-underline"></div>
+          </div>
     </div>
     <!-- 推文抽屉 -->
     <el-drawer
@@ -73,6 +85,7 @@
                 :src="`/idol/headImg/${member.name}.png`"
                 size="40"
                 style="border: 1px solid #ddd;"
+                @dragstart.prevent
             />
           </div>
         </div>
@@ -135,6 +148,7 @@
                 :alt="`图片 ${i + 1}`"
                 loading="lazy"
                 style="width: 100%; border-radius: 8px; cursor: pointer;"
+                draggable="false"
                 @click="openImageInNewTab(img)"
                 @error="handleImageError(tweet.id, i)"
                 @load="handleImageLoad(tweet.id, i)"
@@ -202,6 +216,14 @@ export default {
       // 搜索相关
       searchValue: null,
       searchIconIndex: 0,
+      searchFocused: false,
+      
+      // 时间相关
+      currentTime: {
+        time: '',
+        date: ''
+      },
+      timeInterval: null,
       
       // 推文相关
       twitterContent: [],
@@ -212,6 +234,47 @@ export default {
     };
   },
   methods: {
+    // 处理搜索框聚焦
+    handleSearchFocus() {
+      this.searchFocused = true;
+    },
+    
+    // 处理搜索框失焦
+    handleSearchBlur() {
+      this.searchFocused = false;
+    },
+    
+    // 更新时间显示
+    updateTime() {
+      const now = new Date();
+      this.currentTime.time = now.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      this.currentTime.date = now.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+      });
+    },
+    
+    // 启动时间更新
+    startTimeUpdate() {
+      this.updateTime();
+      this.timeInterval = setInterval(this.updateTime, 1000);
+    },
+    
+    // 停止时间更新
+    stopTimeUpdate() {
+      if (this.timeInterval) {
+        clearInterval(this.timeInterval);
+        this.timeInterval = null;
+      }
+    },
+    
     // 键盘事件处理
     async keyDown(e) {
       if (e.key === "Tab") {
@@ -381,9 +444,9 @@ export default {
       const menuElement = document.querySelector('.el-menu--horizontal');
       if (menuElement) {
         const hex = member.color;
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
         menuElement.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
       }
     }
@@ -395,6 +458,8 @@ export default {
     this.getTwitterContent();
     // 监听主题变更
     this.setupThemeChangeListener();
+    // 启动时间更新
+    this.startTimeUpdate();
   },
   
   beforeUnmount() {
@@ -403,6 +468,8 @@ export default {
     if (this.localStorageListener) {
       window.removeEventListener('storage', this.localStorageListener);
     }
+    // 停止时间更新
+    this.stopTimeUpdate();
   },
   computed: {
     // 成员列表
@@ -454,13 +521,236 @@ export default {
   border-bottom: none !important;
   box-shadow: none !important;
 }
-.inputStyle {   /*输入框样式*/
+/* 时间显示容器 - 输入框上方 */
+.time-container {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 0px;
+  margin-bottom: 20px;
+}
+
+.time-display {
+  text-align: center;
+  color: #fff;
+  text-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.6),
+    0 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.time-main {
+  font-size: 28px;
+  font-weight: 300;
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  opacity: 0.95;
+}
+
+.time-date {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.8;
+  letter-spacing: 0.5px;
+}
+
+/* 搜索容器样式 */
+.search-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 0;
+  padding: 0 20px;
+}
+
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 55px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.25), 
+    rgba(255, 255, 255, 0.1),
+    rgba(0, 0, 0, 0.1)
+  );
+  border-radius: 30px;
+  backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.search-wrapper:hover {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.35), 
+    rgba(255, 255, 255, 0.2),
+    rgba(0, 0, 0, 0.05)
+  );
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 8px 30px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.search-wrapper.focused {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.4), 
+    rgba(255, 255, 255, 0.25),
+    rgba(0, 0, 0, 0.1)
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 4px rgba(255, 255, 255, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.2) !important;
+  transform: translateY(-4px) scale(1.05) !important;
+}
+
+.search-icon {
+  margin-right: 15px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+.search-wrapper:hover .search-icon {
+  opacity: 0.8;
+  transform: scale(1.05);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.search-wrapper.focused .search-icon {
+  opacity: 0.9;
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  height: 100%;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 400;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.6),
+    0 0 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.search-wrapper.focused .search-input::placeholder {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.search-underline {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    rgba(102, 126, 234, 0.8), 
+    rgba(118, 75, 162, 0.8),
+    rgba(255, 107, 107, 0.8)
+  );
+  border-radius: 2px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.search-wrapper.focused .search-underline {
+  width: 85%;
+  box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+}
+
+/* 添加微妙的呼吸动画 */
+@keyframes gentlePulse {
+  0%, 100% {
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 6px 25px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+}
+
+.search-wrapper:not(.focused):not(:hover) {
+  animation: gentlePulse 4s ease-in-out infinite;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .time-container {
+    margin-top: 80px;
+    margin-bottom: 15px;
+  }
+  
+  .time-main {
+    font-size: 24px;
+    letter-spacing: 0.5px;
+  }
+  
+  .time-date {
+    font-size: 11px;
+  }
+  
+  .search-container {
+    margin-top: 0;
+    padding: 0 15px;
+  }
+  
+  .search-wrapper {
+    height: 50px;
+    max-width: 100%;
+    padding: 0 20px;
+  }
+  
+  .search-input {
+    font-size: 15px;
+  }
 }
 ::v-deep(.el-avatar) {    /*全局avatar样式*/
   background-color: transparent !important;
+}
+
+::v-deep(.el-image) {    /*禁用el-image拖拽*/
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+::v-deep(.el-image img) {    /*禁用el-image内部img拖拽*/
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 </style>
 

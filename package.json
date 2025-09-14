@@ -1,8 +1,8 @@
 {
-  "name": "アイマス",
-  "description": "アイマス",
+  "name": "学マス",
+  "description": "学マス",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",

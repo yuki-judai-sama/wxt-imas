@@ -1,151 +1,3 @@
-<script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
-import { members, DEFAULT_MEMBER } from '/src/config/newTabConfig.js'
-
-// 当前选中的成员
-const selectedMember = ref(localStorage.getItem('defaultMember') || DEFAULT_MEMBER)
-
-
-// 计算当前成员的主题样式
-const currentMemberTheme = computed(() => {
-  const member = members.find(m => m.name === selectedMember.value)
-  if (!member) return { color: '#667eea', bgImage: '' }
-  
-  const hex = member.color
-  const r = parseInt(hex.substring(0, 2), 16)
-  const g = parseInt(hex.substring(2, 4), 16)
-  const b = parseInt(hex.substring(4, 6), 16)
-  
-  return {
-    color: `rgb(${r}, ${g}, ${b})`,
-    bgImage: `/idol/${member.name}.png`
-  }
-})
-
-// 计算当前成员的下标
-const currentMemberIndex = computed(() => {
-  return members.findIndex(m => m.name === selectedMember.value)
-})
-
-// 切换成员主题
-const changeMemberTheme = (memberName: string) => {
-  selectedMember.value = memberName
-  localStorage.setItem('defaultMember', memberName)
-  
-  // 通知新标签页更新主题
-  notifyNewTabThemeChange(memberName)
-}
-
-// 通知新标签页主题变更
-const notifyNewTabThemeChange = (memberName: string) => {
-  // 尝试通过 Chrome storage 发送通知（可选）
-  if (chrome && chrome.storage) {
-    try {
-      chrome.storage.local.set({ 
-        themeChange: {
-          memberName: memberName,
-          timestamp: Date.now()
-        }
-      })
-    } catch (error) {
-      console.debug('Chrome storage 更新失败:', error)
-    }
-  }
-  
-  // 尝试通过消息发送通知（可选）
-  if (chrome && chrome.tabs) {
-    try {
-      chrome.tabs.query({}, (tabs) => {
-        tabs.forEach(tab => {
-          if (tab.id && tab.url && tab.url.includes('entrypoints/newtab/index.html')) {
-            chrome.tabs.sendMessage(tab.id, {
-              type: 'THEME_CHANGE',
-              memberName: memberName
-            })
-          }
-        })
-      })
-    } catch (error) {
-      console.debug('发送消息失败:', error)
-    }
-  }
-}
-
-// 跳转到设置页面
-const goToSettings = () => {
-  // 打开新标签页到设置页面
-  chrome.tabs.create({ 
-    url: chrome.runtime.getURL('entrypoints/newtab/index.html') 
-  })
-  // 关闭弹窗
-  window.close()
-}
-
-
-// 跳转到成员推特
-const goToMemberTwitter = (member: any) => {
-  window.open(member.link, '_blank')
-  window.close()
-}
-
-
-// 计算容器样式
-const containerStyle = computed(() => {
-  return {
-    backgroundImage: `url('${currentMemberTheme.value.bgImage}')`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat'
-  }
-})
-
-// 计算头部样式
-const headerStyle = computed(() => {
-  return {
-    backgroundColor: `rgba(${currentMemberTheme.value.color.replace('rgb(', '').replace(')', '')}, 0.2)`,
-    backdropFilter: 'blur(10px)'
-  }
-})
-
-// 计算主题预览样式
-const themePreviewStyle = computed(() => {
-  return {
-    borderColor: currentMemberTheme.value.color
-  }
-})
-
-// 获取成员项样式
-const getMemberItemStyle = (member: any) => {
-  const hex = member.color
-  const r = parseInt(hex.substring(0, 2), 16)
-  const g = parseInt(hex.substring(2, 4), 16)
-  const b = parseInt(hex.substring(4, 6), 16)
-  
-  return {
-    borderColor: `rgb(${r}, ${g}, ${b})`,
-    backgroundColor: selectedMember.value === member.name 
-      ? `rgba(${r}, ${g}, ${b}, 0.2)` 
-      : 'rgba(255, 255, 255, 0.1)'
-  }
-}
-
-// 组件挂载时初始化
-onMounted(() => {
-  // 确保选中的成员在列表中
-  if (!members.find(m => m.name === selectedMember.value)) {
-    selectedMember.value = DEFAULT_MEMBER
-  }
-  
-  // 调试信息
-  console.log('PopPlugin 已挂载，当前成员:', selectedMember.value)
-  console.log('Chrome API 可用性:', {
-    chrome: !!chrome,
-    tabs: !!chrome?.tabs,
-    storage: !!chrome?.storage,
-    runtime: !!chrome?.runtime
-  })
-})
-</script>
 
 <template>
   <div class="popup-container" :style="containerStyle">
@@ -157,21 +9,16 @@ onMounted(() => {
           alt="学マス" 
           class="logo"
         />
-        <h2 class="title">学マス 助手</h2>
+        <h2 class="title">学マス小插件</h2>
       </div>
       <el-divider />
     </div>
 
     <!-- 主要内容区域 -->
     <div class="content">
-      <!-- 当前主题显示 -->
+      <!-- 当前主题预览 -->
       <div class="current-theme-section">
         <div class="theme-preview" :style="themePreviewStyle">
-          <img 
-            :src="currentMemberTheme.bgImage" 
-            alt="当前主题" 
-            class="theme-bg-image"
-          />
           <div class="theme-overlay">
             <div class="content-wrapper">
               <img 
@@ -187,11 +34,7 @@ onMounted(() => {
 
       <!-- 成员主题选择器 -->
       <div class="member-selector">
-        <h4 class="selector-title">
-          <el-icon><User /></el-icon>
-          选择成员主题
-        </h4>
-         <div class="member-grid">
+        <div class="member-grid">
            <div
              v-for="member in members"
              :key="member.name"
@@ -232,11 +75,142 @@ onMounted(() => {
     <div class="footer">
       <el-divider />
       <div class="footer-content">
-        <span class="copyright">© 学マス小插件</span>
+        <span class="copyright">©学マス小插件</span>
+        <span class="copyright">Version 1.0.0</span>
       </div>
     </div>
   </div>
 </template>
+
+<script>
+import { members, DEFAULT_MEMBER } from '/src/config/newTabConfig.js'
+
+export default {
+  name: "PopPlugin",
+  data() {
+    return {
+      // 当前选中的成员
+      selectedMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER
+    };
+  },
+  methods: {
+    // 切换成员主题
+    changeMemberTheme(memberName) {
+      this.selectedMember = memberName;
+      localStorage.setItem('defaultMember', memberName);
+      this.notifyNewTabThemeChange(memberName);
+    },
+    
+    // 通知新标签页主题变更
+    notifyNewTabThemeChange(memberName) {
+      // Chrome storage 通知
+      if (chrome?.storage) {
+        try {
+          chrome.storage.local.set({ 
+            themeChange: { memberName, timestamp: Date.now() }
+          });
+        } catch (error) {
+          console.debug('Chrome storage 更新失败:', error);
+        }
+      }
+      
+      // Chrome tabs 消息通知
+      if (chrome?.tabs) {
+        try {
+          chrome.tabs.query({}, (tabs) => {
+            tabs.forEach(tab => {
+              if (tab.id && tab.url?.includes('entrypoints/newtab/index.html')) {
+                chrome.tabs.sendMessage(tab.id, {
+                  type: 'THEME_CHANGE',
+                  memberName
+                });
+              }
+            });
+          });
+        } catch (error) {
+          console.debug('发送消息失败:', error);
+        }
+      }
+    },
+    
+    // 跳转到设置页面
+    goToSettings() {
+      chrome.tabs.create({ 
+        url: chrome.runtime.getURL('entrypoints/newtab/index.html') 
+      });
+      window.close();
+    },
+    
+    // 获取成员项样式
+    getMemberItemStyle(member) {
+      const hex = member.color;
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      return {
+        borderColor: `rgb(${r}, ${g}, ${b})`,
+        backgroundColor: this.selectedMember === member.name 
+          ? `rgba(${r}, ${g}, ${b}, 0.2)` 
+          : 'rgba(255, 255, 255, 0.1)'
+      };
+    }
+  },
+  mounted() {
+    // 确保选中的成员在列表中
+    if (!members.find(m => m.name === this.selectedMember)) {
+      this.selectedMember = DEFAULT_MEMBER;
+    }
+  },
+  computed: {
+    // 成员列表
+    members() {
+      return members;
+    },
+    
+    // 当前成员主题样式
+    currentMemberTheme() {
+      const member = members.find(m => m.name === this.selectedMember);
+      if (!member) return { color: '#667eea', bgImage: '' };
+      
+      const hex = member.color;
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      return {
+        color: `rgb(${r}, ${g}, ${b})`,
+        bgImage: `/idol/${member.name}.png`
+      };
+    },
+    
+    // 容器背景样式
+    containerStyle() {
+      return {
+        backgroundImage: `url('${this.currentMemberTheme.bgImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    },
+    
+    // 头部样式
+    headerStyle() {
+      return {
+        backgroundColor: `rgba(${this.currentMemberTheme.color.replace('rgb(', '').replace(')', '')}, 0.2)`,
+        backdropFilter: 'blur(10px)'
+      };
+    },
+    
+    // 主题预览边框样式
+    themePreviewStyle() {
+      return {
+        borderColor: this.currentMemberTheme.color
+      };
+    }
+  }
+};
+</script>
 
 <style scoped>
 /* 标准浏览器插件弹窗尺寸 */
@@ -321,15 +295,6 @@ onMounted(() => {
   backdrop-filter: blur(10px);
 }
 
-.theme-bg-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.6;
-}
 
 .theme-overlay {
   position: absolute;
@@ -371,22 +336,13 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
-.selector-title {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
 
 
 .member-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+  justify-items: stretch;
 }
 
 .member-item {
@@ -434,8 +390,6 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* 欢迎区域 - 已移除，功能整合到主题预览中 */
-
 /* 按钮区域 */
 .actions {
   display: flex;
@@ -461,36 +415,6 @@ onMounted(() => {
 }
 
 
-/* 快捷信息卡片 */
-.quick-info {
-  margin-top: auto;
-}
-
-.info-card {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-}
-
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.info-icon {
-  color: #ffd700;
-  font-size: 16px;
-}
 
 /* 底部样式 */
 .footer {
@@ -506,9 +430,6 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.version {
-  font-weight: 500;
-}
 
 .copyright {
   opacity: 0.7;

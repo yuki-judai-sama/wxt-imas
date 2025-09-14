@@ -1,9 +1,8 @@
 <template>
   <div class="mainStyle" :style="mainStyle">
-    <!--********************************************************************************************************************************-->
-    <!--导航条-->
+    <!-- 顶部导航栏 -->
     <el-menu mode="horizontal" :style="menuStyle" :ellipsis="false">
-      <!--默认Logo-->
+      <!-- 官方Logo -->
       <el-menu-item index="logo" @click="openMemberLink(0)">
         <img
             style="max-height: 100%; height: auto; width: auto;"
@@ -11,7 +10,7 @@
             draggable="false"
         />
       </el-menu-item>
-      <!--循环头像-->
+      <!-- 成员头像列表 -->
       <el-menu-item
           v-for="(member, index) in members"
           :key="member.name"
@@ -20,12 +19,13 @@
       >
         <el-avatar :src="`/idol/headImg/${member.name}.png`" @dragstart.prevent/>
       </el-menu-item>
-      <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="this.memberDrawerVisible=true">
+      <!-- 成员动态按钮 -->
+      <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="memberDrawerVisible=true">
         <el-button type="primary" plain round>成员动态</el-button>
       </el-menu-item>
     </el-menu>
-    <!--********************************************************************************************************************************-->
-    <!--搜索输入框-->
+    
+    <!-- 搜索输入框 -->
     <div class="inputStyle">
       <el-input
           v-model="searchValue"
@@ -34,7 +34,6 @@
           placeholder="Enter键搜索,Tab键切换搜索引擎"
           ref="searchInput"
       >
-        <!--输入框图标-->
         <template #prefix>
           <img
               :src="`/icon/${searchEngines[searchIconIndex].name}.png`"
@@ -53,10 +52,9 @@
         :header-style="{ padding: '4px 16px', fontSize: '16px', fontWeight: 'bold' }"
         :body-style="{ padding: '0' }"
     >
-      <!-- 成员头像筛选器 -->
+      <!-- 成员筛选器 -->
       <div style="padding: 0px 16px 4px 16px; border-bottom: 1px solid #eee;">
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <!-- 循环显示所有成员头像 -->
           <div
               v-for="member in members"
               :key="member.name"
@@ -198,46 +196,41 @@ export default {
   name: "NewTab",
   data() {
     return {
-      thisWebWidth: 0,                          //当前页面宽度
-      thisWebHeight: 0,                         //当前页面高度
-
-      selectMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,  //默认选择成员（用于主题显示）
-
-      searchValue: null,                        //搜索框输入内容
-      searchIconIndex: 0,                       //搜索框默认图标下标
-
-      twitterContent: [],                       //推文内容
-      memberDrawerVisible: false,                //推文抽屉
-      selectedFilterMember: null,               //当前筛选的成员
-      filteredTwitterContent: [],               //筛选后的推文内容
-      imageLoadErrors: {}                       // 用于跟踪图片加载失败
+      // 主题相关
+      selectMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,
+      
+      // 搜索相关
+      searchValue: null,
+      searchIconIndex: 0,
+      
+      // 推文相关
+      twitterContent: [],
+      memberDrawerVisible: false,
+      selectedFilterMember: null,
+      filteredTwitterContent: [],
+      imageLoadErrors: {} // 跟踪图片加载失败状态
     };
   },
   methods: {
-    //键盘监听
+    // 键盘事件处理
     async keyDown(e) {
-      //tab键切换搜索图标
       if (e.key === "Tab") {
-        e.preventDefault(); //阻止默认切换焦点行为
+        e.preventDefault();
         this.searchIconIndex = (this.searchIconIndex + 1) % this.searchEngines.length;
-      }
-      //回车键触发搜索
-      else if (e.key === "Enter") {
+      } else if (e.key === "Enter") {
         await this.searchContent(this.searchValue);
       }
     },
-    //搜索内容
-    async searchContent(value){
-      //获取对应的搜索引擎URL模板
+    
+    // 执行搜索
+    async searchContent(value) {
       const urlTemplate = this.searchEngines[this.searchIconIndex].urlTemplate;
-      //用 encodeURIComponent 对搜索内容编码，防止特殊字符导致URL错误
       const encodedValue = encodeURIComponent(value);
-      //替换 %keyword% 为编码后的搜索内容
       const searchUrl = urlTemplate.replace('%keyword%', encodedValue);
-
       window.open(searchUrl, '_blank');
     },
-    //打开成员推特链接
+    
+    // 打开成员推特链接
     openMemberLink(index) {
       if (index === 0) {
         window.open('https://x.com/gkmas_official', '_blank');
@@ -245,136 +238,70 @@ export default {
         window.open(this.members[index - 1].link, '_blank');
       }
     },
-    //推文转换链接
+    // 处理推文文本链接和标签
     convertLinks(text) {
       if (!text) return '';
 
-      // 1) 先移除引用推文链接：x.com / twitter.com / 任意 nitter* 域名 / 以及 *.kuuro.net（含无协议、可紧贴文字）
+      // 移除引用推文链接
       const quoteLinkRegex = /(?:(?:https?:\/\/)?)(?:x\.com|twitter\.com|(?:[a-zA-Z0-9-]+\.)*nitter[^\s\/]*|(?:[a-zA-Z0-9-]+\.)*kuuro\.net)\/[A-Za-z0-9_]+\/status\/\d+[^\s]*/gi;
       const withoutQuoteLinks = text.replace(quoteLinkRegex, '');
 
-      // 2) 转义 HTML 与换行
+      // 转义 HTML 并处理换行
       let processedText = withoutQuoteLinks
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
           .replace(/\n/g, '<br/>')
           .trim();
       
-      // 3) 普通链接高亮（已移除需要隐藏的引用链接）
+      // 高亮普通链接
       processedText = processedText.replace(/(https?:\/\/[a-zA-Z0-9\-._~:\/?#[\]@!$&'()*+,;=%]+)/g, (match, url) => {
         return `<a href="${url}" target="_blank" style="color: #409EFF;">${url}</a>`;
       });
       
-      // 4) 话题标签高亮（避免影响已转成链接的部分）
+      // 高亮话题标签
       processedText = processedText.replace(/#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)(?![^<]*<\/a>)/g, (match, hashtag) => {
         return `<a href="https://x.com/search?q=%23${hashtag}" target="_blank" style="color: #409EFF;">#${hashtag}</a>`;
       });
       
       return processedText;
     },
-    //推文转换时间
+    
+    // 格式化日期时间
     formatDate(dateStr) {
-      const date = new Date(dateStr)
+      const date = new Date(dateStr);
       return date.toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
-      })
+      });
     },
-    //鼠标点击特效
-    async clickBubbling(){
-      (function () {
-        //初始第一次点击的下标
-        let a_idx = 0;
-        window.onclick = function (event) {
-          //使用配置文件中的文字数组
-          let array = CLICK_EFFECT_TEXTS;
-
-          //创建b元素
-          let heart = document.createElement("b");
-
-          //防止拖动
-          heart.onselectstart = function (event) {
-            event.preventDefault();
-          };
-
-          //将b元素添加到页面上
-          document.body.appendChild(heart).innerHTML = array[a_idx];
-
-          //根据数组长度生成随机数
-          let randomNum=Math.floor(Math.random()*array.length)
-
-          //选中需要渲染的文字
-          a_idx = (a_idx + randomNum) % array.length;
-
-          //给p元素设置样式
-          heart.style.cssText = "position: fixed;left:-100%;";
-          let f = 16,                      // 字体大小
-              x = event.clientX - f / 2,   // 横坐标
-              y = event.clientY - f,       // 纵坐标
-              c = randomColor(),           // 随机颜色
-              a = 0.75,                    // 透明度
-              s = 1.2;                     // 放大缩小
-
-          //添加定时器
-          let timer = setInterval(function () {
-            if (a <= 0) {
-              document.body.removeChild(heart);
-              clearInterval(timer);
-            } else {
-              heart.style.cssText = "font-size:16px;cursor: default;position: fixed;color:" +
-                  c + ";left:" + x + "px;top:" + y + "px;opacity:" + a + ";transform:scale(" +
-                  s + ");";
-              y--;
-              a -= 0.016;
-              s += 0.002;
-            }
-          }, 15)
-        }
-        // 随机成员颜色
-        function randomColor() {
-          const randomIndex = Math.floor(Math.random() * members.length);
-          const hex = members[randomIndex].color;
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-          return `rgb(${r}, ${g}, ${b})`;
-        }
-      }());
-    },
-    // 获取头像名称
+    // 获取成员头像名称
     getAvatarName(memberTwitter) {
-      // 如果是官方账号，返回官方头像
       if (memberTwitter.toLowerCase() === OFFICIAL_ACCOUNT.toLowerCase()) {
         return OFFICIAL_AVATAR;
       }
-      // 否则查找成员头像
       const member = this.members.find(m => m.twitter.toLowerCase() === memberTwitter.toLowerCase());
-      if (member) {
-        return member.name;
-      }
-      // 如果找不到对应的成员，返回默认头像
-      return 'default';
+      return member ? member.name : 'default';
     },
-    // 自动拉取推文
-    async getTwitterContent(){
-      $axios.post('/TwitterController/getTwitterContent').then(res=>{
-        this.twitterContent = res.data
-        this.filterByMember(null) // 初始化筛选为全部
-      }).catch(err=>{
-        console.error('获取推文数据失败:', err)
-      })
+    
+    // 获取推文数据
+    async getTwitterContent() {
+      $axios.post('/TwitterController/getTwitterContent').then(res => {
+        this.twitterContent = res.data;
+        this.filterByMember(null);
+      }).catch(err => {
+        console.error('获取推文数据失败:', err);
+      });
     },
-    //筛选推文
+    
+    // 按成员筛选推文
     filterByMember(memberName) {
       this.selectedFilterMember = memberName;
       if (memberName) {
-        // 根据成员名字找到对应的twitter用户名
         const member = this.members.find(m => m.name === memberName);
         if (member) {
-          // 使用twitter字段来筛选推文
           this.filteredTwitterContent = this.twitterContent.filter(tweet =>
               tweet.member.toLowerCase() === member.twitter.toLowerCase()
           );
@@ -382,71 +309,67 @@ export default {
           this.filteredTwitterContent = [];
         }
       } else {
-        // 显示所有成员推文
         this.filteredTwitterContent = this.twitterContent;
       }
     },
-    //切换成员筛选
+    
+    // 切换成员筛选状态
     toggleMemberFilter(memberName) {
       if (this.selectedFilterMember === memberName) {
-        this.filterByMember(null); // 点击同一成员头像，显示全部推文
+        this.filterByMember(null);
       } else {
-        this.filterByMember(memberName); // 点击不同成员头像，显示该成员推文
+        this.filterByMember(memberName);
       }
     },
     // 判断是否为card_img格式的图片URL
     isCardImgUrl(url) {
       return url && url.includes('nitter.kuuro.net/pic/card_img');
     },
+    
     // 在新标签页中打开图片
     openImageInNewTab(url) {
       window.open(url, '_blank');
     },
+    
     // 处理图片加载失败
     handleImageError(tweetId, index) {
       this.imageLoadErrors[`${tweetId}-${index}`] = true;
     },
+    
     // 处理图片加载成功
     handleImageLoad(tweetId, index) {
       delete this.imageLoadErrors[`${tweetId}-${index}`];
     },
+    
     // 打开成员推特主页
     openMemberTwitterPage(memberTwitter) {
       window.open(`https://x.com/${memberTwitter}`, '_blank');
     },
     // 设置主题变更监听器
     setupThemeChangeListener() {
-      // 监听 localStorage 事件（最可靠的方案）
       const localStorageListener = (e) => {
         if (e.key === 'defaultMember' && e.newValue) {
           this.handleThemeChange(e.newValue);
         }
       };
-      
       window.addEventListener('storage', localStorageListener);
       this.localStorageListener = localStorageListener;
     },
+    
     // 处理主题变更
     handleThemeChange(memberName) {
-      // 检查成员是否存在
       const member = this.members.find(m => m.name === memberName);
-      if (!member) {
-        return;
-      }
+      if (!member) return;
       
-      // 更新数据
       this.selectMember = memberName;
       localStorage.setItem('defaultMember', memberName);
-      
-      // 立即更新样式
       this.updateThemeStyles(memberName, member);
-      
-      // 强制重新渲染
       this.$forceUpdate();
     },
+    
     // 更新主题样式
     updateThemeStyles(memberName, member) {
-      // 确保背景图片更新
+      // 更新背景图片
       const mainElement = document.querySelector('.mainStyle');
       if (mainElement) {
         mainElement.style.backgroundImage = `url('/idol/${memberName}.png')`;
@@ -454,7 +377,7 @@ export default {
         mainElement.style.backgroundRepeat = 'no-repeat';
       }
       
-      // 确保导航栏颜色更新
+      // 更新导航栏颜色
       const menuElement = document.querySelector('.el-menu--horizontal');
       if (menuElement) {
         const hex = member.color;
@@ -463,33 +386,20 @@ export default {
         const b = parseInt(hex.substring(4, 6), 16);
         menuElement.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
       }
-      
-      // 确保选择器也更新
-      const selectElement = document.querySelector('.el-select .el-input__inner');
-      if (selectElement) {
-        selectElement.value = memberName;
-      }
     }
   },
   mounted() {
-    this.thisWebWidth = document.documentElement.clientWidth;
-    this.thisWebHeight = document.documentElement.clientHeight;
-
-    //监听全局键盘事件
+    // 监听键盘事件
     window.addEventListener("keydown", this.keyDown);
-    //鼠标点击特效
-    // this.clickBubbling();
-    //自动拉取推文
+    // 获取推文数据
     this.getTwitterContent();
-    
-    // 监听主题变更消息
+    // 监听主题变更
     this.setupThemeChangeListener();
   },
-  //销毁全局监听事件
+  
   beforeUnmount() {
+    // 清理事件监听器
     window.removeEventListener("keydown", this.keyDown);
-    
-    // 清理 localStorage 监听器
     if (this.localStorageListener) {
       window.removeEventListener('storage', this.localStorageListener);
     }
@@ -499,15 +409,18 @@ export default {
     members() {
       return members;
     },
+    
     // 搜索引擎列表
     searchEngines() {
       return searchEngines;
     },
-    //实时计算当前成员所处下标
+    
+    // 当前成员索引
     selectMemberThemeIndex() {
       return this.members.findIndex(m => m.name === this.selectMember);
     },
-    //动态主题样式
+    
+    // 主容器样式
     mainStyle() {
       const bgImage = `/idol/${this.members[this.selectMemberThemeIndex].name}.png`;
       return {
@@ -520,7 +433,8 @@ export default {
         padding: 0,
       };
     },
-    //动态导航样式
+    
+    // 导航栏样式
     menuStyle() {
       const hex = this.members[this.selectMemberThemeIndex].color;
       const r = parseInt(hex.substring(0, 2), 16);

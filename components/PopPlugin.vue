@@ -173,12 +173,14 @@ onMounted(() => {
             class="theme-bg-image"
           />
           <div class="theme-overlay">
-            <el-avatar 
-              :src="`/idol/headImg/${selectedMember}.png`" 
-              size="60"
-              class="theme-avatar"
-            />
-            <h3 class="theme-name">{{ selectedMember }}</h3>
+            <div class="content-wrapper">
+              <img 
+                :src="`/idol/headImg/${selectedMember}.png`" 
+                class="theme-avatar"
+                style="width: 50px; height: 50px; border-radius: 50%;"
+              />
+              <h3 class="theme-name">{{ selectedMember }}</h3>
+            </div>
           </div>
         </div>
       </div>
@@ -189,24 +191,26 @@ onMounted(() => {
           <el-icon><User /></el-icon>
           选择成员主题
         </h4>
-        <div class="member-grid">
-          <div
-            v-for="member in members"
-            :key="member.name"
-            class="member-item"
-            :class="{ active: selectedMember === member.name }"
-            :style="getMemberItemStyle(member)"
-            @click="changeMemberTheme(member.name)"
-            :title="`切换到 ${member.name} 主题`"
-          >
-            <el-avatar 
-              :src="`/idol/headImg/${member.name}.png`" 
-              size="40"
-              class="member-avatar"
-            />
-            <span class="member-name">{{ member.name }}</span>
-          </div>
-        </div>
+         <div class="member-grid">
+           <div
+             v-for="member in members"
+             :key="member.name"
+             class="member-item"
+             :class="{ active: selectedMember === member.name }"
+             :style="getMemberItemStyle(member)"
+             @click="changeMemberTheme(member.name)"
+             :title="`切换到 ${member.name} 主题`"
+           >
+             <div class="member-content">
+               <img 
+                 :src="`/idol/headImg/${member.name}.png`" 
+                 class="member-avatar"
+                 style="width: 24px; height: 24px; border-radius: 50%;"
+               />
+               <span class="member-name">{{ member.name }}</span>
+             </div>
+           </div>
+         </div>
       </div>
 
       <!-- 功能按钮区域 -->
@@ -309,7 +313,7 @@ onMounted(() => {
 
 .theme-preview {
   position: relative;
-  height: 80px;
+  height: 70px;
   border-radius: 12px;
   border: 2px solid;
   overflow: hidden;
@@ -335,14 +339,21 @@ onMounted(() => {
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  justify-content: center;
   background: rgba(0, 0, 0, 0.3);
+}
+
+.content-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .theme-avatar {
   border: 2px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: block;
+  flex-shrink: 0;
 }
 
 .theme-name {
@@ -351,6 +362,8 @@ onMounted(() => {
   font-weight: 600;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* 成员选择器区域 */
@@ -378,9 +391,7 @@ onMounted(() => {
 
 .member-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
   padding: 8px;
   border-radius: 8px;
   border: 2px solid;
@@ -388,6 +399,13 @@ onMounted(() => {
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
+}
+
+.member-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .member-item:hover {
@@ -406,11 +424,14 @@ onMounted(() => {
 }
 
 .member-name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: #fff;
-  text-align: center;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 欢迎区域 - 已移除，功能整合到主题预览中 */

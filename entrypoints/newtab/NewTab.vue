@@ -21,7 +21,7 @@
       </el-menu-item>
       <!-- 成员动态按钮 -->
       <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="memberDrawerVisible=true">
-        <el-button type="primary" plain round>成员动态</el-button>
+        <el-button type="primary" plain round>动态</el-button>
       </el-menu-item>
     </el-menu>
     

@@ -90,8 +90,8 @@
           >
             <el-avatar
                 :src="`/idol/headImg/${member.name}.png`"
-                size="38"
                 class="member-avatar"
+                :style="{ width: '38px', height: '38px' }"
                 @dragstart.prevent
             />
             <div class="member-name">{{ member.name }}</div>
@@ -156,7 +156,7 @@
             <div v-for="(img, i) in tweet.media" :key="i" class="tweet-image-container">
               <img
                   v-if="isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
-                  :src="img"
+                  :src="getImageUrl(img)"
                   :alt="`图片 ${i + 1}`"
                   loading="lazy"
                   class="tweet-image"
@@ -166,7 +166,7 @@
               />
               <img
                   v-else-if="!isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
-              :src="img"
+              :src="getImageUrl(img)"
                   :alt="`图片 ${i + 1}`"
                   loading="lazy"
                   class="tweet-image"
@@ -218,8 +218,9 @@
 </template>
 <!--*****************************************************************************************************************-->
 <script>
-import $axios from '/src/$axios.js'
+import $axios from '/src/utils/$axios.js'
 import { members, searchEngines, OFFICIAL_ACCOUNT, OFFICIAL_AVATAR, DEFAULT_MEMBER, CLICK_EFFECT_TEXTS } from '/src/config/newTabConfig.js'
+import { hexToRgb, toRgba, getMemberByName, getMemberByTwitter } from '/src/utils/ui.js'
 
 export default {
   name: "NewTab",
@@ -249,6 +250,47 @@ export default {
     };
   },
   methods: {
+    // 以下方法为轻薄封装，转调 utils，保证调用点不变
+    hexToRgb,
+    toRgba,
+    getMemberByName(name) { return getMemberByName(this.members, name); },
+    getMemberByTwitter(twitter) { return getMemberByTwitter(this.members, twitter); },
+    // Nitter 图片到 pbs 映射
+    getImageUrl(url) {
+      if (!url) return url;
+      try {
+        // 只处理 nitter 的 /pic/ 链接
+        if (/^https?:\/\/[^\s]*nitter[^\s]*\/pic\//.test(url) || /^https?:\/\/nt\.kuuro\.net\/pic\//.test(url)) {
+          const u = url.replace(/^https?:\/\/[^\s]*nitter[^\s]*/i, 'https://nt.kuuro.net')
+                       .replace(/^https?:\/\/nt\.kuuro\.net/i, 'https://nt.kuuro.net');
+          // 解码 path 后做规则转换
+          const path = decodeURIComponent(u.split('/pic/')[1] || '');
+          // 几种常见前缀
+          // media/<filename> → pbs.twimg.com/media/<filename>
+          if (path.startsWith('media/')) {
+            return `https://pbs.twimg.com/${path}`;
+          }
+          // card_img/<id>/<rest>?format=jpg&name=800x419 → pbs.twimg.com/card_img/<id>/<rest>?format=jpg&name=orig
+          if (path.startsWith('card_img/')) {
+            const [p, query = ''] = path.split('?');
+            const sp = new URLSearchParams(query);
+            if (sp.has('name')) sp.set('name', 'orig');
+            return `https://pbs.twimg.com/${p}?${sp.toString()}`;
+          }
+          // amplify_video_thumb/... → pbs.twimg.com/amplify_video_thumb/...
+          if (path.startsWith('amplify_video_thumb/')) {
+            return `https://pbs.twimg.com/${path}`;
+          }
+          // img/<...> → pbs 也可以直连
+          if (path.startsWith('img/')) {
+            return `https://pbs.twimg.com/${path}`;
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+      return url;
+    },
     // 处理搜索框聚焦
     handleSearchFocus() {
       this.searchFocused = true;
@@ -360,7 +402,7 @@ export default {
       if (memberTwitter.toLowerCase() === OFFICIAL_ACCOUNT.toLowerCase()) {
         return OFFICIAL_AVATAR;
       }
-      const member = this.members.find(m => m.twitter.toLowerCase() === memberTwitter.toLowerCase());
+      const member = this.getMemberByTwitter(memberTwitter);
       return member ? member.name : 'default';
     },
     
@@ -378,7 +420,7 @@ export default {
     filterByMember(memberName) {
       this.selectedFilterMember = memberName;
       if (memberName) {
-        const member = this.members.find(m => m.name === memberName);
+        const member = this.getMemberByName(memberName);
         if (member) {
           this.filteredTwitterContent = this.twitterContent.filter(tweet =>
               tweet.member.toLowerCase() === member.twitter.toLowerCase()
@@ -460,11 +502,8 @@ export default {
       // 更新导航栏颜色
       const menuElement = document.querySelector('.el-menu--horizontal');
       if (menuElement) {
-        const hex = member.color;
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-        menuElement.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
+        const rgb = this.hexToRgb(member.color);
+        menuElement.style.backgroundColor = this.toRgba(rgb, 0.4);
       }
     }
   },
@@ -521,14 +560,10 @@ export default {
     // 导航栏样式
     menuStyle() {
       const hex = this.members[this.selectMemberThemeIndex].color;
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      
+      const { r, g, b } = this.hexToRgb(hex);
       // 根据颜色亮度调整透明度，深色用更高透明度，浅色用更低透明度
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
       const alpha = brightness > 128 ? 0.15 : 0.25;
-      
       return {
         background: `linear-gradient(135deg, 
           rgba(${r}, ${g}, ${b}, ${alpha}), 

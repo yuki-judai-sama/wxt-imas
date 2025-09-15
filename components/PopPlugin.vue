@@ -87,6 +87,7 @@
 
 <script>
 import { members, DEFAULT_MEMBER } from '/src/config/newTabConfig.js'
+import { hexToRgb, toRgba } from '/src/utils/ui.js'
 
 export default {
   name: "PopPlugin",
@@ -97,6 +98,14 @@ export default {
     };
   },
   methods: {
+    // 直接复用 utils
+    hexToRgb,
+    toRgba,
+
+    // 获取成员对象
+    getMemberByName(name) {
+      return members.find(m => m.name === name);
+    },
     // 切换成员主题
     changeMemberTheme(memberName) {
       this.selectedMember = memberName;
@@ -146,15 +155,11 @@ export default {
     
     // 获取成员项样式
     getMemberItemStyle(member) {
-      const hex = member.color;
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      
+      const rgb = this.hexToRgb(member.color);
       return {
-        borderColor: `rgb(${r}, ${g}, ${b})`,
+        borderColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
         backgroundColor: this.selectedMember === member.name 
-          ? `rgba(${r}, ${g}, ${b}, 0.2)` 
+          ? this.toRgba(rgb, 0.2)
           : 'rgba(255, 255, 255, 0.1)'
       };
     }
@@ -199,8 +204,14 @@ export default {
     
     // 头部样式
     headerStyle() {
+      // 从 currentMemberTheme.color 的 rgb(...) 中解析为 r,g,b
+      const [r, g, b] = this.currentMemberTheme.color
+        .replace('rgb(', '')
+        .replace(')', '')
+        .split(',')
+        .map(v => Number(v.trim()));
       return {
-        backgroundColor: `rgba(${this.currentMemberTheme.color.replace('rgb(', '').replace(')', '')}, 0.2)`,
+        backgroundColor: this.toRgba({ r, g, b }, 0.2),
         backdropFilter: 'blur(10px)'
       };
     },

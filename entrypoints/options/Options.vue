@@ -147,7 +147,6 @@ export default {
       try {
         localStorage.setItem('defaultMember', memberName);
         this.notifyNewTabThemeChange(memberName);
-        this.$message.success(`已切换到 ${memberName} 主题`);
       } catch (error) {
         console.error('保存主题设置失败:', error);
         this.$message.error('保存设置失败，请重试');

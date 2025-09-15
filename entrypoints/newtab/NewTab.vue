@@ -219,7 +219,7 @@
 <!--*****************************************************************************************************************-->
 <script>
 import $axios from '/src/utils/$axios.js'
-import { members, searchEngines, OFFICIAL_ACCOUNT, OFFICIAL_AVATAR, DEFAULT_MEMBER, CLICK_EFFECT_TEXTS } from '/src/config/newTabConfig.js'
+import { members, searchEngines, OFFICIAL_ACCOUNT, OFFICIAL_AVATAR, DEFAULT_MEMBER } from '/src/config/newTabConfig.js'
 import { hexToRgb, toRgba, getMemberByName, getMemberByTwitter } from '/src/utils/ui.js'
 
 export default {
@@ -445,13 +445,6 @@ export default {
     isCardImgUrl(url) {
       return url && url.includes('nitter.kuuro.net/pic/card_img');
     },
-    
-    // 在新标签页中打开图片
-    openImageInNewTab(url) {
-      window.open(url, '_blank');
-    },
-    
-    
     
     // 处理图片加载失败
     handleImageError(tweetId, index) {

@@ -27,11 +27,3 @@ export const OFFICIAL_AVATAR = 'GakuMasu';
 
 // 默认成员配置
 export const DEFAULT_MEMBER = 'KatsuragiLilja';
-
-// 点击特效文字配置
-export const CLICK_EFFECT_TEXTS = [
-  '❤アイマス!❤',
-  '❤これからも、アイマスですよ❤',
-  '🍙神降临!🍙',
-  '🐷猪降临🐷'
-]; 

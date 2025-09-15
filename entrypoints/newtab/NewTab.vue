@@ -50,7 +50,6 @@
             ref="searchInput"
             @focus="handleSearchFocus"
             @blur="handleSearchBlur"
-            @keydown="keyDown"
         />
         <div class="search-underline"></div>
           </div>

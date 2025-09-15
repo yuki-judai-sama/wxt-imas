@@ -484,4 +484,17 @@ export default {
     font-size: 14px;
   }
 }
+
+/* 解决Edge浏览器插件弹窗背景黑色问题 */
+:global(html, body) {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+:global(#app) {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
 </style>

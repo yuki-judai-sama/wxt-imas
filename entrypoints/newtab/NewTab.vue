@@ -551,11 +551,35 @@ export default {
           menuElement.style.backgroundColor = this.toRgba(rgb, 0.4);
         }
       }
+    },
+    
+    // 处理文档点击事件，清除导航栏聚焦状态
+    handleDocumentClick(event) {
+      // 检查点击的是否是导航栏内的元素
+      const menuElement = document.querySelector('.el-menu--horizontal');
+      if (menuElement && !menuElement.contains(event.target)) {
+        // 点击在导航栏外部，清除所有菜单项的聚焦状态
+        this.clearMenuFocus();
+      }
+    },
+    
+    // 清除菜单聚焦状态
+    clearMenuFocus() {
+      const menuItems = document.querySelectorAll('.el-menu-item');
+      menuItems.forEach(item => {
+        // 移除 Element Plus 的聚焦类
+        item.classList.remove('is-active');
+        item.classList.remove('is-focus');
+        // 移除自定义的聚焦状态
+        item.blur();
+      });
     }
   },
   mounted() {
     // 监听键盘事件
     window.addEventListener("keydown", this.keyDown);
+    // 监听点击事件，清除导航栏聚焦状态
+    document.addEventListener("click", this.handleDocumentClick);
     // 获取推文数据
     this.getTwitterContent();
     // 监听主题变更
@@ -571,6 +595,7 @@ export default {
   beforeUnmount() {
     // 清理事件监听器
     window.removeEventListener("keydown", this.keyDown);
+    document.removeEventListener("click", this.handleDocumentClick);
     if (this.localStorageListener) {
       window.removeEventListener('storage', this.localStorageListener);
     }

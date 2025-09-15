@@ -109,8 +109,10 @@
             </el-upload>
             
             <!-- 当前背景图预览 -->
-            <div v-else class="bg-preview">
-              <img :src="customBgUrl" alt="自定义背景图" class="bg-preview-image" />
+            <div v-else class="bg-preview-container">
+              <div class="bg-preview">
+                <img :src="customBgUrl" alt="自定义背景图" class="bg-preview-image" />
+              </div>
               <div class="bg-actions">
                 <el-button size="small" @click="removeCustomBg">删除</el-button>
                 <el-button size="small" @click="changeCustomBg">更换</el-button>
@@ -797,19 +799,31 @@ export default {
   background: transparent;
 }
 
-.bg-preview {
+.bg-preview-container {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 200px;
+}
+
+.bg-preview {
+  width: 200px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  overflow: hidden;
 }
 
 .bg-preview-image {
-  width: 200px;
-  height: 120px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: block;
 }
 
 .bg-actions {

@@ -219,7 +219,7 @@
 <!--*****************************************************************************************************************-->
 <script>
 import $axios from '/src/utils/$axios.js'
-import { members, searchEngines, OFFICIAL_ACCOUNT, OFFICIAL_AVATAR, DEFAULT_MEMBER } from '/src/config/newTabConfig.js'
+import { members, searchEngines, DEFAULT_MEMBER } from '/src/config/appConfig.js'
 import { hexToRgb, toRgba, getMemberByName, getMemberByTwitter } from '/src/utils/ui.js'
 
 export default {
@@ -231,7 +231,7 @@ export default {
       
       // 搜索相关
       searchValue: null,
-      searchIconIndex: 0,
+      searchIconIndex: this.getInitialSearchEngineIndex(),
       searchFocused: false,
       
       // 时间相关
@@ -246,7 +246,8 @@ export default {
       memberDrawerVisible: false,
       selectedFilterMember: null,
       filteredTwitterContent: [],
-      imageLoadErrors: {} // 跟踪图片加载失败状态
+      imageLoadErrors: {}, // 跟踪图片加载失败状态
+      settingsListener: null // 设置变更监听器
     };
   },
   methods: {
@@ -255,6 +256,13 @@ export default {
     toRgba,
     getMemberByName(name) { return getMemberByName(this.members, name); },
     getMemberByTwitter(twitter) { return getMemberByTwitter(this.members, twitter); },
+    
+    // 获取初始搜索引擎索引
+    getInitialSearchEngineIndex() {
+      const savedEngine = localStorage.getItem('defaultSearchEngine') || 'google';
+      const engineIndex = searchEngines.findIndex(engine => engine.name === savedEngine);
+      return engineIndex !== -1 ? engineIndex : 0;
+    },
     // Nitter 图片到 pbs 映射
     getImageUrl(url) {
       if (!url) return url;
@@ -399,9 +407,6 @@ export default {
     },
     // 获取成员头像名称
     getAvatarName(memberTwitter) {
-      if (memberTwitter.toLowerCase() === OFFICIAL_ACCOUNT.toLowerCase()) {
-        return OFFICIAL_AVATAR;
-      }
       const member = this.getMemberByTwitter(memberTwitter);
       return member ? member.name : 'default';
     },
@@ -471,6 +476,17 @@ export default {
       this.localStorageListener = localStorageListener;
     },
     
+    // 设置设置变更监听器
+    setupSettingsChangeListener() {
+      const localStorageListener = (e) => {
+        if (e.key === 'defaultSearchEngine' && e.newValue) {
+          this.handleSearchEngineChange(e.newValue);
+        }
+      };
+      window.addEventListener('storage', localStorageListener);
+      this.settingsListener = localStorageListener;
+    },
+    
     // 处理主题变更
     handleThemeChange(memberName) {
       const member = this.members.find(m => m.name === memberName);
@@ -480,6 +496,14 @@ export default {
       localStorage.setItem('defaultMember', memberName);
       this.updateThemeStyles(memberName, member);
       this.$forceUpdate();
+    },
+    
+    // 处理搜索引擎变更
+    handleSearchEngineChange(searchEngineName) {
+      const engineIndex = this.searchEngines.findIndex(engine => engine.name === searchEngineName);
+      if (engineIndex !== -1) {
+        this.searchIconIndex = engineIndex;
+      }
     },
     
     // 更新主题样式
@@ -507,6 +531,8 @@ export default {
     this.getTwitterContent();
     // 监听主题变更
     this.setupThemeChangeListener();
+    // 监听设置变更
+    this.setupSettingsChangeListener();
     // 启动时间更新
     this.startTimeUpdate();
   },
@@ -516,6 +542,9 @@ export default {
     window.removeEventListener("keydown", this.keyDown);
     if (this.localStorageListener) {
       window.removeEventListener('storage', this.localStorageListener);
+    }
+    if (this.settingsListener) {
+      window.removeEventListener('storage', this.settingsListener);
     }
     // 停止时间更新
     this.stopTimeUpdate();

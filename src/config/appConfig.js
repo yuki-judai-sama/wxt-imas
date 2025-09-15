@@ -11,19 +11,16 @@ export const members = [
   { name: 'HanamiUme', color: 'f74b2a', link: 'https://x.com/Matsuda_Ayane7', twitter: 'Matsuda_Ayane7' },
   { name: 'JuoSena', color: 'f7ad54', link: 'https://x.com/hitaka_mashiro', twitter: 'hitaka_mashiro' },
   { name: 'HimesakiRinami', color: 'fd7ec2', link: 'https://x.com/yuri_usui0515', twitter: 'yuri_usui0515' },
+  { name: 'HatayaMisuzu', color: 'A0B6DC', link: 'https://x.com/Harusaki_non', twitter: 'Harusaki_non' },
 ];
 
 // 搜索引擎配置
 export const searchEngines = [
-  { name: 'google', urlTemplate: 'https://www.google.com/search?q=%keyword%' },
-  { name: 'baidu', urlTemplate: 'https://www.baidu.com/s?wd=%keyword%' },
-  { name: 'bilibili', urlTemplate: 'https://search.bilibili.com/all?keyword=%keyword%' },
-  { name: 'biying', urlTemplate: 'https://www.bing.com/search?q=%keyword%' }
+  { name: 'google', displayName: 'Google', urlTemplate: 'https://www.google.com/search?q=%keyword%' },
+  { name: 'baidu', displayName: '百度', urlTemplate: 'https://www.baidu.com/s?wd=%keyword%' },
+  { name: 'bilibili', displayName: '哔哩哔哩', urlTemplate: 'https://search.bilibili.com/all?keyword=%keyword%' },
+  { name: 'biying', displayName: '必应', urlTemplate: 'https://www.bing.com/search?q=%keyword%' }
 ]; 
-
-// 官方账号配置
-export const OFFICIAL_ACCOUNT = 'gkmas_official';
-export const OFFICIAL_AVATAR = 'GakuMasu';
 
 // 默认成员配置
 export const DEFAULT_MEMBER = 'KatsuragiLilja';

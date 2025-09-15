@@ -86,7 +86,7 @@
 </template>
 
 <script>
-import { members, DEFAULT_MEMBER } from '/src/config/newTabConfig.js'
+import { members, DEFAULT_MEMBER } from '/src/config/appConfig.js'
 import { hexToRgb, toRgba } from '/src/utils/ui.js'
 
 export default {
@@ -145,12 +145,23 @@ export default {
       }
     },
     
-    // 跳转到设置页面
+    // 跳转到设置页面（带降级兜底）
     goToSettings() {
-      chrome.tabs.create({ 
-        url: chrome.runtime.getURL('entrypoints/newtab/index.html') 
-      });
-      window.close();
+      const url = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
+        ? chrome.runtime.getURL('options.html')
+        : 'options.html';
+      if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+        try {
+          chrome.tabs.create({ url });
+        } catch (_) {
+          window.open(url, '_blank');
+        }
+      } else {
+        window.open(url, '_blank');
+      }
+      if (typeof window !== 'undefined' && typeof window.close === 'function') {
+        window.close();
+      }
     },
     
     // 获取成员项样式

@@ -507,8 +507,20 @@ export default {
       const r = parseInt(hex.substring(0, 2), 16);
       const g = parseInt(hex.substring(2, 4), 16);
       const b = parseInt(hex.substring(4, 6), 16);
+      
+      // 根据颜色亮度调整透明度，深色用更高透明度，浅色用更低透明度
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      const alpha = brightness > 128 ? 0.15 : 0.25;
+      
       return {
-        backgroundColor: `rgba(${r}, ${g}, ${b}, 0.4)`
+        background: `linear-gradient(135deg, 
+          rgba(${r}, ${g}, ${b}, ${alpha}), 
+          rgba(${r}, ${g}, ${b}, ${alpha * 0.6}),
+          rgba(0, 0, 0, 0.1)
+        )`,
+        backdropFilter: 'blur(20px)',
+        borderBottom: `1px solid rgba(${r}, ${g}, ${b}, 0.2)`,
+        boxShadow: `0 2px 20px rgba(${r}, ${g}, ${b}, 0.1)`
       };
     }
   }
@@ -517,9 +529,146 @@ export default {
 <!--*****************************************************************************************************************-->
 <style scoped>
 
-::v-deep(.el-menu--horizontal) {    /*删除menu自带外边框*/
+::v-deep(.el-menu--horizontal) {
   border-bottom: none !important;
   box-shadow: none !important;
+  padding: 0 20px;
+  height: 70px;
+  transition: all 0.3s ease;
+}
+
+::v-deep(.el-menu-item) {
+  height: 70px;
+  line-height: 70px;
+  padding: 0 15px;
+  margin: 0 5px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+::v-deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+::v-deep(.el-menu-item.is-active) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-1px);
+}
+
+::v-deep(.el-menu-item img) {
+  max-height: 45px;
+  width: auto;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+::v-deep(.el-menu-item:hover img) {
+  transform: scale(1.05);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+}
+
+::v-deep(.el-avatar) {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+::v-deep(.el-menu-item:hover .el-avatar) {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+::v-deep(.el-button) {
+  border-radius: 16px;
+  padding: 8px 18px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15), 
+    rgba(255, 255, 255, 0.08)
+  );
+  color: #fff;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.5),
+    0 0 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+::v-deep(.el-button:hover) {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.25), 
+    rgba(255, 255, 255, 0.15)
+  );
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.6),
+    0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 微妙的悬停效果 */
+::v-deep(.el-menu-item:not(:hover)) {
+  opacity: 0.9;
+}
+
+::v-deep(.el-menu-item:hover) {
+  opacity: 1;
+}
+
+/* 成员动态按钮特殊效果 - 在浅色背景下更突出 */
+::v-deep(.el-menu-item:last-child .el-button) {
+  position: relative;
+  overflow: hidden;
+}
+
+::v-deep(.el-menu-item:last-child .el-button::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.2), 
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+::v-deep(.el-menu-item:last-child .el-button:hover::before) {
+  left: 100%;
+}
+
+/* 添加微妙的发光效果 */
+@keyframes buttonGlow {
+  0%, 100% {
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 0 0 0 rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 0 0 2px rgba(255, 255, 255, 0.1);
+  }
+}
+
+::v-deep(.el-menu-item:last-child .el-button:not(:hover)) {
+  animation: buttonGlow 3s ease-in-out infinite;
 }
 /* 时间显示容器 - 输入框上方 */
 .time-container {

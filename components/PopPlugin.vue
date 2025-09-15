@@ -10,7 +10,7 @@
           class="logo"
           draggable="false"
         />
-        <h2 class="title">学マス小插件</h2>
+        <h2 class="title">学マス</h2>
       </div>
       <el-divider />
     </div>
@@ -78,7 +78,7 @@
     <div class="footer">
       <el-divider />
       <div class="footer-content">
-        <span class="copyright">©学マス小插件</span>
+        <span class="copyright">©学マス</span>
         <span class="copyright">Version 1.0.0</span>
       </div>
     </div>

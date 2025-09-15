@@ -86,7 +86,7 @@
               @click="toggleMemberFilter(member.name)"
               class="member-filter-item"
               :class="{ 'active': selectedFilterMember === member.name }"
-              :title="selectedFilterMember === member.name ? '点击显示全部推文' : `点击只显示 @${member.name} 的推文`"
+              :title="selectedFilterMember === member.name ? '点击显示全部推文' : `点击只显示 @${member.memberName} 的推文`"
           >
             <el-avatar
                 :src="`/idol/headImg/${member.name}.png`"
@@ -94,7 +94,7 @@
                 :style="{ width: '38px', height: '38px' }"
                 @dragstart.prevent
             />
-            <div class="member-name">{{ member.name }}</div>
+            <div class="member-name">{{ member.memberName }}</div>
           </div>
         </div>
       </div>

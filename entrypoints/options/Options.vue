@@ -27,7 +27,6 @@
         
         <!-- 当前主题预览 -->
         <div class="current-theme-section">
-          <h3>当前主题</h3>
           <div class="theme-preview" :style="themePreviewStyle">
             <div class="theme-overlay">
               <div class="content-wrapper">
@@ -36,7 +35,7 @@
                   class="theme-avatar"
                   draggable="false"
                 />
-                <h4 class="theme-name">{{ selectedMember }}</h4>
+                <h4 class="theme-name">{{ getMemberDisplayName(selectedMember) }}</h4>
               </div>
             </div>
           </div>
@@ -44,7 +43,6 @@
 
         <!-- 成员主题选择器 -->
         <div class="member-selector">
-          <h3>选择成员主题</h3>
           <div class="member-grid">
             <div
               v-for="member in members"
@@ -53,7 +51,7 @@
               :class="{ active: selectedMember === member.name }"
               :style="getMemberItemStyle(member)"
               @click="changeMemberTheme(member.name)"
-              :title="`切换到 ${member.name} 主题`"
+              :title="`切换到 ${member.memberName} 主题`"
             >
               <div class="member-content">
                 <img 
@@ -61,7 +59,7 @@
                   class="member-avatar"
                   draggable="false"
                 />
-                <span class="member-name">{{ member.name }}</span>
+                <span class="member-name">{{ member.memberName }}</span>
               </div>
             </div>
           </div>
@@ -133,10 +131,9 @@
         </template>
         
         <div class="about-content">
-          <p><strong>插件名称：</strong>学マス</p>
+          <p><strong>插件名称：</strong>学マス主题浏览器扩展插件</p>
           <p><strong>版本：</strong>1.0.0</p>
-          <p><strong>描述：</strong>学マス主题浏览器扩展插件</p>
-          <p><strong>开发者：</strong>Yuki_JudaiP</p>
+            <p>如有问题反馈或功能建议，欢迎发送邮件至：<a href="mailto:yukijudai.sky@qq.com" style="color: #409EFF; text-decoration: none;">yukijudai.sky@qq.com</a></p>
         </div>
       </el-card>
     </div>
@@ -292,6 +289,12 @@ export default {
           console.debug('发送消息失败:', error);
         }
       }
+    },
+    
+    // 获取成员显示名称
+    getMemberDisplayName(memberName) {
+      const member = members.find(m => m.name === memberName);
+      return member ? member.memberName : memberName;
     },
     
     // 获取成员项样式
@@ -474,9 +477,13 @@ export default {
     
     // 头部样式
     headerStyle() {
+      // 使用与 PopPlugin.vue 相同的透明毛玻璃效果
       return {
-        backgroundColor: `rgba(${this.currentMemberTheme.color.replace('rgb(', '').replace(')', '')}, 0.2)`,
-        backdropFilter: 'blur(10px)'
+        background: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(25px) saturate(1.8)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        border: '1px solid rgba(255, 255, 255, 0.12)'
       };
     },
     
@@ -541,7 +548,8 @@ export default {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #fff;
+  color: #1f2937;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 /* 内容区域 */
@@ -832,7 +840,7 @@ export default {
 
 /* Element Plus 组件样式覆盖 */
 :deep(.el-divider) {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(0, 0, 0, 0.1);
   margin: 16px 0;
 }
 

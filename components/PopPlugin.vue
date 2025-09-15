@@ -28,7 +28,7 @@
                 style="width: 50px; height: 50px; border-radius: 50%;"
                 draggable="false"
               />
-              <h3 class="theme-name">{{ selectedMember }}</h3>
+              <h3 class="theme-name">{{ getMemberDisplayName(selectedMember) }}</h3>
             </div>
           </div>
         </div>
@@ -44,7 +44,7 @@
              :class="{ active: selectedMember === member.name }"
              :style="getMemberItemStyle(member)"
              @click="changeMemberTheme(member.name)"
-             :title="`切换到 ${member.name} 主题`"
+             :title="`切换到 ${member.memberName} 主题`"
            >
              <div class="member-content">
                <img 
@@ -53,7 +53,7 @@
                  style="width: 24px; height: 24px; border-radius: 50%;"
                  draggable="false"
                />
-               <span class="member-name">{{ member.name }}</span>
+               <span class="member-name">{{ member.memberName }}</span>
              </div>
            </div>
          </div>
@@ -105,6 +105,12 @@ export default {
     // 获取成员对象
     getMemberByName(name) {
       return members.find(m => m.name === name);
+    },
+    
+    // 获取成员显示名称
+    getMemberDisplayName(memberName) {
+      const member = members.find(m => m.name === memberName);
+      return member ? member.memberName : memberName;
     },
     // 切换成员主题
     changeMemberTheme(memberName) {
@@ -215,15 +221,13 @@ export default {
     
     // 头部样式
     headerStyle() {
-      // 从 currentMemberTheme.color 的 rgb(...) 中解析为 r,g,b
-      const [r, g, b] = this.currentMemberTheme.color
-        .replace('rgb(', '')
-        .replace(')', '')
-        .split(',')
-        .map(v => Number(v.trim()));
+      // 使用与 NewTab.vue 导航栏相同的透明毛玻璃效果
       return {
-        backgroundColor: this.toRgba({ r, g, b }, 0.2),
-        backdropFilter: 'blur(10px)'
+        background: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(25px) saturate(1.8)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        border: '1px solid rgba(255, 255, 255, 0.12)'
       };
     },
     
@@ -293,7 +297,8 @@ export default {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: #1f2937;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 /* 内容区域 */
@@ -469,7 +474,7 @@ export default {
 
 /* Element Plus 组件样式覆盖 */
 :deep(.el-divider) {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(0, 0, 0, 0.1);
   margin: 12px 0;
 }
 

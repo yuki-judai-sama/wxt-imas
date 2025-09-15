@@ -427,16 +427,23 @@ export default {
   height: 44px;
   font-size: 15px;
   font-weight: 500;
-  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
 }
 
 .main-action-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6b4c93 100%);
 }
 
 
@@ -472,6 +479,27 @@ export default {
 
 :deep(.el-button .el-icon) {
   margin-right: 6px;
+}
+
+/* 确保按钮内容垂直居中 */
+:deep(.main-action-btn) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+:deep(.main-action-btn .el-icon) {
+  margin-right: 6px;
+  vertical-align: middle;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
+:deep(.main-action-btn span) {
+  cursor: pointer !important;
+  user-select: none !important;
 }
 
 :deep(.el-card__body) {

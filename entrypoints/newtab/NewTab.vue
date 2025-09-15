@@ -58,147 +58,163 @@
     <!-- 推文抽屉 -->
     <el-drawer
         v-model="memberDrawerVisible"
-        title="成员动态"
         direction="rtl"
-        size="30%"
-        :header-style="{ padding: '4px 16px', fontSize: '16px', fontWeight: 'bold' }"
-        :body-style="{ padding: '0' }"
+        size="600px"
+        :header-style="{ 
+          padding: '20px 24px', 
+          fontSize: '20px', 
+          fontWeight: '600',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: '#fff',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          borderBottom: '1px solid rgba(255,255,255,0.1)'
+        }"
+        :body-style="{ 
+          padding: '0',
+          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          minHeight: '100vh'
+        }"
     >
+      <!-- 顶部分割线 -->
+      <div class="drawer-divider"></div>
+      
       <!-- 成员筛选器 -->
-      <div style="padding: 0px 16px 4px 16px; border-bottom: 1px solid #eee;">
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <div class="member-filter-container">
+        <div class="member-filter-grid">
           <div
               v-for="member in members"
               :key="member.name"
               @click="toggleMemberFilter(member.name)"
-              :style="{
-                cursor: 'pointer',
-                padding: '8px',
-                borderRadius: '8px',
-                border: '2px solid',
-                borderColor: selectedFilterMember === member.name ? '#409EFF' : '#ddd',
-                backgroundColor: selectedFilterMember === member.name ? '#f0f8ff' : '#fff'
-              }"
+              class="member-filter-item"
+              :class="{ 'active': selectedFilterMember === member.name }"
               :title="selectedFilterMember === member.name ? '点击显示全部推文' : `点击只显示 @${member.name} 的推文`"
           >
             <el-avatar
                 :src="`/idol/headImg/${member.name}.png`"
-                size="40"
-                style="border: 1px solid #ddd;"
+                size="38"
+                class="member-avatar"
                 @dragstart.prevent
             />
+            <div class="member-name">{{ member.name }}</div>
           </div>
         </div>
       </div>
 
-      <div v-if="filteredTwitterContent.length === 0" style="text-align: center; padding: 20px; color: #666;">
-        <div v-if="twitterContent.length === 0">暂无推文数据</div>
-        <div v-else-if="selectedFilterMember">@{{ selectedFilterMember }} 暂无推文</div>
-        <div v-else>暂无推文数据</div>
+      <!-- 空状态提示 -->
+      <div v-if="filteredTwitterContent.length === 0" class="empty-state">
+        <div class="empty-icon">📱</div>
+        <div v-if="twitterContent.length === 0" class="empty-text">暂无推文数据</div>
+        <div v-else-if="selectedFilterMember" class="empty-text">@{{ selectedFilterMember }} 暂无推文</div>
+        <div v-else class="empty-text">暂无推文数据</div>
       </div>
+      
+      <!-- 推文列表 -->
+      <div class="tweet-list">
       <div
-          v-for="(tweet, index) in filteredTwitterContent"
+            v-for="(tweet, index) in filteredTwitterContent"
           :key="index"
-          :style="{
-            marginBottom: '16px',
-            marginTop: index === 0 ? '16px' : '0'
-          }"
+            class="tweet-card"
+            :class="{ 'first-tweet': index === 0 }"
       >
-        <div style="display: flex; align-items: center; margin-bottom: 6px;">
+          <!-- 推文头部 -->
+          <div class="tweet-header">
           <el-avatar
               :src="`/idol/headImg/${getAvatarName(tweet.member)}.png`"
               draggable="false"
               @dragstart.prevent
-              style="margin-right: 8px; cursor: pointer;"
-              @click="openMemberTwitterPage(tweet.member)"
-              :title="`点击访问 @${tweet.member} 的推特主页`"
+                class="tweet-avatar"
+                @click="openMemberTwitterPage(tweet.member)"
+                :title="`点击访问 @${tweet.member} 的推特主页`"
           />
-          <div>
-            <div style="font-weight: bold; font-size: 14px; color: #333;">
+            <div class="tweet-user-info">
+              <div class="tweet-username">
               @{{ tweet.member }}
-              <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
-                    style="font-size: 12px; color: #666; margin-left: 8px;">
-                (来自 @{{ tweet.source_user }})
-              </span>
+                <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
+                      class="tweet-source">
+                  (来自 @{{ tweet.source_user }})
+                </span>
             </div>
-            <div style="color: gray; font-size: 13px;">
+              <div class="tweet-time">
               {{ formatDate(tweet.created_at) }}
             </div>
           </div>
         </div>
 
-        <p
-            style="white-space: pre-line; margin-top: 8px"
-            v-html="convertLinks(tweet.text)"
-        ></p>
+          <!-- 推文内容 -->
+          <div class="tweet-content" v-html="convertLinks(tweet.text)"></div>
 
-        <!-- 显示推文来源信息 -->
-        <div v-if="tweet.source_user && tweet.source_user !== tweet.member"
-             style="margin-top: 8px; padding: 8px; background-color: #f5f5f5; border-radius: 4px; font-size: 12px; color: #666;">
-          📍 此推文来自 <strong style="cursor: pointer; color: #409EFF;" @click="openMemberTwitterPage(tweet.source_user)">@{{ tweet.source_user }}</strong> 的时间线
-        </div>
-
-        <!-- 图片显示 -->
-        <div v-if="tweet.media && tweet.media.length > 0" style="margin-top: 8px">
-          <div v-for="(img, i) in tweet.media" :key="i" style="margin-bottom: 8px;">
-            <!-- 对于card_img格式的Nitter图片，使用img标签直接显示原始URL -->
-            <img
-                v-if="isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
-                :src="img"
-                :alt="`图片 ${i + 1}`"
-                loading="lazy"
-                style="width: 100%; border-radius: 8px; cursor: pointer;"
-                draggable="false"
-                @click="openImageInNewTab(img)"
-                @error="handleImageError(tweet.id, i)"
-                @load="handleImageLoad(tweet.id, i)"
-            />
-            <!-- 对于其他图片URL，使用el-image组件 -->
-          <el-image
-                v-else-if="!isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
-              :src="img"
-                style="width: 100%; border-radius: 8px; cursor: pointer;"
-                :preview-src-list="tweet.media"
-                :initial-index="i"
-              fit="cover"
-                :alt="`图片 ${i + 1}`"
-                @error="handleImageError(tweet.id, i)"
-                @load="handleImageLoad(tweet.id, i)"
-          />
+          <!-- 推文来源信息 -->
+          <div v-if="tweet.source_user && tweet.source_user !== tweet.member"
+               class="tweet-source-info">
+            <i class="el-icon-location"></i>
+            此推文来自 
+            <strong @click="openMemberTwitterPage(tweet.source_user)">@{{ tweet.source_user }}</strong> 
+            的时间线
           </div>
+
+          <!-- 图片显示 -->
+          <div v-if="tweet.media && tweet.media.length > 0" class="tweet-media">
+            <div v-for="(img, i) in tweet.media" :key="i" class="tweet-image-container">
+              <img
+                  v-if="isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
+                  :src="img"
+                  :alt="`图片 ${i + 1}`"
+                  loading="lazy"
+                  class="tweet-image"
+                  draggable="false"
+                  @error="handleImageError(tweet.id, i)"
+                  @load="handleImageLoad(tweet.id, i)"
+              />
+              <img
+                  v-else-if="!isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
+              :src="img"
+                  :alt="`图片 ${i + 1}`"
+                  loading="lazy"
+                  class="tweet-image"
+                  draggable="false"
+                  @error="handleImageError(tweet.id, i)"
+                  @load="handleImageLoad(tweet.id, i)"
+              />
+            </div>
         </div>
 
-        <div style="text-align: right; margin-top: 4px;">
+          <!-- 推文操作 -->
+          <div class="tweet-actions">
           <a
               :href="`https://x.com/${tweet.member}/status/${tweet.id}`"
               target="_blank"
               rel="noopener noreferrer"
-              style="font-size: 13px; color: #409EFF;"
+                class="tweet-link"
           >
+              <i class="el-icon-link"></i>
             打开推文
           </a>
-          <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
-                style="font-size: 12px; color: #999; margin-left: 12px;">
-            原始推文
-          </span>
+            <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
+                  class="tweet-original">
+              原始推文
+            </span>
+          </div>
+        </div>
         </div>
 
-        <el-divider />
-      </div>
-
       <!-- 筛选状态提示 -->
-      <div v-if="selectedFilterMember && filteredTwitterContent.length > 0" style="padding: 16px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #eee;">
-        当前显示：@{{ selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
+      <div v-if="selectedFilterMember && filteredTwitterContent.length > 0" class="filter-status">
+        <div class="filter-info">
+          <i class="el-icon-filter"></i>
+          当前显示：@{{ selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
+        </div>
         <el-button
-            type="text"
+            type="primary"
             size="small"
             @click="filterByMember(null)"
-            style="margin-left: 8px;"
+            class="clear-filter-btn"
         >
+          <i class="el-icon-refresh"></i>
           显示全部
         </el-button>
       </div>
     </el-drawer>
+    
   </div>
 </template>
 <!--*****************************************************************************************************************-->
@@ -393,6 +409,8 @@ export default {
     openImageInNewTab(url) {
       window.open(url, '_blank');
     },
+    
+    
     
     // 处理图片加载失败
     handleImageError(tweetId, index) {
@@ -670,6 +688,277 @@ export default {
 ::v-deep(.el-menu-item:last-child .el-button:not(:hover)) {
   animation: buttonGlow 3s ease-in-out infinite;
 }
+
+/* 顶部分割线 */
+.drawer-divider {
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(0, 0, 0, 0.1), 
+    transparent
+  );
+  margin: 0;
+}
+
+/* 成员动态抽屉样式 */
+.member-filter-container {
+  padding: 8px 24px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+
+.member-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.member-filter-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid transparent;
+}
+
+.member-filter-item:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.member-filter-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.member-avatar {
+  margin-bottom: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.member-name {
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* 推文列表样式 */
+.tweet-list {
+  padding: 0 8px 20px;
+}
+
+.tweet-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  backdrop-filter: blur(10px);
+}
+
+.tweet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.tweet-card.first-tweet {
+  margin-top: 20px;
+}
+
+.tweet-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.tweet-avatar {
+  margin-right: 12px;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.tweet-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tweet-user-info {
+  flex: 1;
+}
+
+.tweet-username {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.tweet-source {
+  font-size: 12px;
+  color: #666;
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.tweet-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.tweet-content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 10px;
+  white-space: pre-line;
+}
+
+.tweet-source-info {
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.tweet-source-info i {
+  margin-right: 4px;
+  color: #667eea;
+}
+
+.tweet-source-info strong {
+  color: #667eea;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tweet-media {
+  margin-bottom: 10px;
+}
+
+.tweet-image-container {
+  margin-bottom: 8px;
+}
+
+.tweet-image {
+  width: 100%;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tweet-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.tweet-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.tweet-link {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.tweet-link:hover {
+  color: #5a6fd8;
+  transform: translateX(2px);
+}
+
+.tweet-link i {
+  margin-right: 4px;
+}
+
+.tweet-original {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 筛选状态样式 */
+.filter-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.filter-info {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #666;
+}
+
+.filter-info i {
+  margin-right: 6px;
+  color: #667eea;
+}
+
+.clear-filter-btn {
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 12px;
+}
+
+.clear-filter-btn i {
+  margin-right: 4px;
+}
+
 /* 时间显示容器 - 输入框上方 */
 .time-container {
   display: flex;

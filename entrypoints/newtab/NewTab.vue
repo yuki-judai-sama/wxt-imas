@@ -510,6 +510,8 @@ export default {
           mainElement.classList.remove('has-custom-bg');
         }
       }
+      // 强制更新导航栏样式
+      this.$forceUpdate();
     },
     
     // 处理主题变更
@@ -541,11 +543,13 @@ export default {
         mainElement.style.backgroundRepeat = 'no-repeat';
       }
       
-      // 更新导航栏颜色
-      const menuElement = document.querySelector('.el-menu--horizontal');
-      if (menuElement) {
-        const rgb = this.hexToRgb(member.color);
-        menuElement.style.backgroundColor = this.toRgba(rgb, 0.4);
+      // 只有在没有自定义背景图时才更新导航栏颜色
+      if (!this.customBgUrl) {
+        const menuElement = document.querySelector('.el-menu--horizontal');
+        if (menuElement) {
+          const rgb = this.hexToRgb(member.color);
+          menuElement.style.backgroundColor = this.toRgba(rgb, 0.4);
+        }
       }
     }
   },
@@ -608,6 +612,18 @@ export default {
     
     // 导航栏样式
     menuStyle() {
+      // 如果有自定义背景图，使用增强的玻璃透视效果
+      if (this.customBgUrl) {
+        return {
+          background: 'rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(25px) saturate(1.8)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          border: '1px solid rgba(255, 255, 255, 0.12)'
+        };
+      }
+      
+      // 默认主题背景图时，使用成员主题色
       const hex = this.members[this.selectMemberThemeIndex].color;
       const { r, g, b } = this.hexToRgb(hex);
       // 根据颜色亮度调整透明度，深色用更高透明度，浅色用更低透明度
@@ -646,8 +662,11 @@ export default {
   border-radius: 8px;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 ::v-deep(.el-menu-item:hover) {
@@ -660,28 +679,75 @@ export default {
   transform: translateY(-1px);
 }
 
+/* 自定义背景图时的导航栏悬停效果 */
+.mainStyle.has-custom-bg ::v-deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.mainStyle.has-custom-bg ::v-deep(.el-menu-item.is-active) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
 ::v-deep(.el-menu-item img) {
   max-height: 45px;
   width: auto;
   transition: all 0.3s ease;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transform-origin: center;
+  position: relative;
+  z-index: 1;
 }
 
 ::v-deep(.el-menu-item:hover img) {
   transform: scale(1.05);
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+  z-index: 2;
+}
+
+/* 自定义背景图时的图片悬停效果 - 确保不影响布局 */
+.mainStyle.has-custom-bg ::v-deep(.el-menu-item img) {
+  transform-origin: center;
+  position: relative;
+  z-index: 1;
+}
+
+.mainStyle.has-custom-bg ::v-deep(.el-menu-item:hover img) {
+  transform: scale(1.05);
+  z-index: 2;
 }
 
 ::v-deep(.el-avatar) {
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transform-origin: center;
+  position: relative;
+  z-index: 1;
 }
 
 ::v-deep(.el-menu-item:hover .el-avatar) {
   transform: scale(1.05);
   border-color: rgba(255, 255, 255, 0.4);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+
+/* 自定义背景图时的头像悬停效果 - 确保不影响布局 */
+.mainStyle.has-custom-bg ::v-deep(.el-avatar) {
+  transform-origin: center;
+  position: relative;
+  z-index: 1;
+}
+
+.mainStyle.has-custom-bg ::v-deep(.el-menu-item:hover .el-avatar) {
+  transform: scale(1.05);
+  z-index: 2;
 }
 
 ::v-deep(.el-button) {
@@ -703,6 +769,18 @@ export default {
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+/* 自定义背景图时的按钮样式 */
+.mainStyle.has-custom-bg ::v-deep(.el-button) {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  color: #1f2937;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
 ::v-deep(.el-button:hover) {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.25), 
@@ -716,6 +794,17 @@ export default {
   text-shadow: 
     0 1px 3px rgba(0, 0, 0, 0.6),
     0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 自定义背景图时的按钮悬停效果 */
+.mainStyle.has-custom-bg ::v-deep(.el-button:hover) {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9);
 }
 
 /* 微妙的悬停效果 */

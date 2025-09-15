@@ -247,7 +247,8 @@ export default {
       selectedFilterMember: null,
       filteredTwitterContent: [],
       imageLoadErrors: {}, // 跟踪图片加载失败状态
-      settingsListener: null // 设置变更监听器
+      settingsListener: null, // 设置变更监听器
+      customBgUrl: localStorage.getItem('customBgUrl') || null // 自定义背景图
     };
   },
   methods: {
@@ -481,10 +482,34 @@ export default {
       const localStorageListener = (e) => {
         if (e.key === 'defaultSearchEngine' && e.newValue) {
           this.handleSearchEngineChange(e.newValue);
+        } else if (e.key === 'customBgUrl') {
+          this.handleCustomBgChange(e.newValue);
         }
       };
       window.addEventListener('storage', localStorageListener);
       this.settingsListener = localStorageListener;
+    },
+    
+    // 处理自定义背景图变更
+    handleCustomBgChange(customBgUrl) {
+      this.customBgUrl = customBgUrl && customBgUrl.trim() !== '' ? customBgUrl : null;
+      this.updateCustomBackground();
+    },
+    
+    // 更新自定义背景图（独立于默认背景图）
+    updateCustomBackground() {
+      const mainElement = document.querySelector('.mainStyle');
+      if (mainElement) {
+        if (this.customBgUrl) {
+          // 添加自定义背景图作为覆盖层
+          mainElement.style.setProperty('--custom-bg', `url('${this.customBgUrl}')`);
+          mainElement.classList.add('has-custom-bg');
+        } else {
+          // 移除自定义背景图
+          mainElement.style.removeProperty('--custom-bg');
+          mainElement.classList.remove('has-custom-bg');
+        }
+      }
     },
     
     // 处理主题变更
@@ -533,6 +558,8 @@ export default {
     this.setupThemeChangeListener();
     // 监听设置变更
     this.setupSettingsChangeListener();
+    // 初始化自定义背景图
+    this.updateCustomBackground();
     // 启动时间更新
     this.startTimeUpdate();
   },
@@ -1256,5 +1283,30 @@ html, body, #app {  /*清除自带外边框*/
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+/* 自定义背景图覆盖层 - 完全独立于默认背景图 */
+.mainStyle.has-custom-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--custom-bg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* 确保默认背景图在自定义背景图之上 */
+.mainStyle {
+  position: relative;
+}
+
+.mainStyle.has-custom-bg {
+  background-image: none !important;
 }
 </style>

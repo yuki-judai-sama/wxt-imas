@@ -89,6 +89,38 @@
           </el-select>
         </div>
 
+        <!-- 自定义背景图设置 -->
+        <div class="setting-item">
+          <label class="setting-label">自定义背景图</label>
+          <div class="custom-bg-container">
+            <!-- 上传区域或预览区域 -->
+            <el-upload
+              v-if="!customBgUrl"
+              class="bg-uploader"
+              :show-file-list="false"
+              :before-upload="beforeBgUpload"
+              :http-request="handleBgUpload"
+              accept="image/*"
+              drag
+            >
+              <div class="upload-content">
+                <el-icon class="bg-uploader-icon"><Plus /></el-icon>
+                <div class="upload-text">选择图片</div>
+                <div class="upload-hint">支持 JPG、PNG 等格式，最大 4MB</div>
+              </div>
+            </el-upload>
+            
+            <!-- 当前背景图预览 -->
+            <div v-else class="bg-preview">
+              <img :src="customBgUrl" alt="自定义背景图" class="bg-preview-image" />
+              <div class="bg-actions">
+                <el-button size="small" @click="removeCustomBg">删除</el-button>
+                <el-button size="small" @click="changeCustomBg">更换</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </el-card>
 
       <!-- 关于信息区域 -->
@@ -122,15 +154,21 @@
 
 <script>
 import { members, DEFAULT_MEMBER, searchEngines } from '/src/config/appConfig.js'
+import { Plus } from '@element-plus/icons-vue'
 
 export default {
   name: "Options",
+  components: {
+    Plus
+  },
   data() {
     return {
       // 当前选中的成员
       selectedMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,
       // 默认搜索引擎
-      defaultSearchEngine: localStorage.getItem('defaultSearchEngine') || 'google'
+      defaultSearchEngine: localStorage.getItem('defaultSearchEngine') || 'google',
+      // 自定义背景图
+      customBgUrl: localStorage.getItem('customBgUrl') || null
     };
   },
   methods: {
@@ -178,6 +216,13 @@ export default {
         localStorage.setItem('defaultMember', this.selectedMember);
         localStorage.setItem('defaultSearchEngine', this.defaultSearchEngine);
         
+        // 保存自定义背景图
+        if (this.customBgUrl) {
+          localStorage.setItem('customBgUrl', this.customBgUrl);
+        } else {
+          localStorage.removeItem('customBgUrl');
+        }
+        
         // 通知新标签页设置变更
         this.notifyNewTabSettingsChange();
         
@@ -198,6 +243,7 @@ export default {
         try {
           this.selectedMember = DEFAULT_MEMBER;
           this.defaultSearchEngine = 'google';
+          this.customBgUrl = null;
           
           localStorage.clear();
           this.notifyNewTabSettingsChange();
@@ -214,7 +260,8 @@ export default {
     // 通知新标签页设置变更
     notifyNewTabSettingsChange() {
       this.notifyNewTab('SETTINGS_CHANGE', { 
-        defaultSearchEngine: this.defaultSearchEngine 
+        defaultSearchEngine: this.defaultSearchEngine,
+        customBgUrl: this.customBgUrl
       });
     },
     
@@ -260,6 +307,118 @@ export default {
           ? `rgba(${r}, ${g}, ${b}, 0.2)` 
           : 'rgba(255, 255, 255, 0.1)'
       };
+    },
+    
+    // 图片上传前验证
+    beforeBgUpload(file) {
+      const isImage = file.type.startsWith('image/');
+      if (!isImage) {
+        this.$message.error('只能上传图片文件!');
+        return false;
+      }
+      
+      // 检查文件大小（限制为4MB）
+      const fileSizeMB = file.size / 1024 / 1024;
+      if (fileSizeMB > 4) {
+        this.$message.error('图片大小不能超过 4MB!');
+        return false;
+      }
+      
+      return true;
+    },
+    
+    // 处理图片上传
+    handleBgUpload(options) {
+      const file = options.file;
+      const fileSizeMB = file.size / 1024 / 1024;
+      
+      if (fileSizeMB < 3) {
+        // 小于3MB，不压缩
+        this.processImage(file, 1.0);
+      } else if (fileSizeMB < 4) {
+        // 3-4MB，轻微压缩
+        this.processImage(file, 0.8);
+      } else {
+        // 大于4MB，不允许上传（已在beforeBgUpload中处理）
+        return;
+      }
+    },
+    
+    // 处理图片压缩
+    processImage(file, quality) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // 计算压缩后的尺寸
+        let { width, height } = img;
+        
+        if (quality < 1.0) {
+          // 轻微压缩：适当缩小尺寸
+          const maxSize = 1920; // 最大宽度
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 绘制图片
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // 生成压缩后的Data URL
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        
+        // 检查压缩后的大小
+        const compressedSizeMB = (compressedDataUrl.length * 0.75) / 1024 / 1024; // base64解码后的大小
+        
+        if (compressedSizeMB > 3) {
+          // 如果压缩后仍然太大，进一步压缩
+          this.processImage(file, quality * 0.7);
+          return;
+        }
+        
+        this.customBgUrl = compressedDataUrl;
+        // 立即保存到localStorage
+        localStorage.setItem('customBgUrl', this.customBgUrl);
+        // 通知新标签页
+        this.notifyNewTabSettingsChange();
+      };
+      
+      img.src = URL.createObjectURL(file);
+    },
+    
+    // 删除自定义背景图
+    removeCustomBg() {
+      this.customBgUrl = null;
+      localStorage.removeItem('customBgUrl');
+      this.notifyNewTabSettingsChange();
+    },
+    
+    // 更换自定义背景图
+    changeCustomBg() {
+      // 触发文件选择
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file && this.beforeBgUpload(file)) {
+          const fileSizeMB = file.size / 1024 / 1024;
+          
+          if (fileSizeMB < 3) {
+            // 小于3MB，不压缩
+            this.processImage(file, 1.0);
+          } else if (fileSizeMB < 4) {
+            // 3-4MB，轻微压缩
+            this.processImage(file, 0.8);
+          }
+        }
+      };
+      input.click();
     }
   },
   mounted() {
@@ -542,6 +701,113 @@ export default {
   font-size: 14px;
   color: #fff;
   font-weight: 500;
+}
+
+/* 自定义背景图设置 */
+.custom-bg-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bg-uploader {
+  width: 200px;
+  height: 120px;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-uploader:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.bg-uploader-icon {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.upload-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* Element Plus 上传组件样式覆盖 */
+:deep(.bg-uploader) {
+  width: 200px;
+  height: 120px;
+  display: block;
+}
+
+:deep(.bg-uploader .el-upload) {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+:deep(.bg-uploader .el-upload-dragger) {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+:deep(.bg-uploader .el-upload-dragger:hover) {
+  background: transparent;
+}
+
+.bg-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bg-preview-image {
+  width: 200px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.bg-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* 关于内容 */

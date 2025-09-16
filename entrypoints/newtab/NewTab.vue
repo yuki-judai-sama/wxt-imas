@@ -21,7 +21,7 @@
       </el-menu-item>
       <!-- 成员动态按钮 -->
       <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="memberDrawerVisible=true">
-        <el-button type="primary" plain round>动态</el-button>
+        <el-button type="primary" plain round>成员动态</el-button>
       </el-menu-item>
     </el-menu>
     
@@ -111,7 +111,7 @@
       <div class="tweet-list">
       <div
             v-for="(tweet, index) in filteredTwitterContent"
-          :key="index"
+            :key="index"
             class="tweet-card"
             :class="{ 'first-tweet': index === 0 }"
       >
@@ -200,7 +200,7 @@
       <div v-if="selectedFilterMember && filteredTwitterContent.length > 0" class="filter-status">
         <div class="filter-info">
           <i class="el-icon-filter"></i>
-          当前显示：@{{ selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
+          当前显示：@{{ getMemberByName(selectedFilterMember)?.twitter || selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
         </div>
         <el-button
             type="primary"

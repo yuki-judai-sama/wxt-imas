@@ -2,18 +2,18 @@
 <template>
   <div class="popup-container" :style="containerStyle">
     <!-- 头部区域 -->
-    <div class="header" :style="headerStyle">
-      <div class="logo-section">
-        <img 
-          src="/icon/学マス-logo.png" 
-          alt="学マス" 
-          class="logo"
-          draggable="false"
-        />
-        <h2 class="title">学マス</h2>
-      </div>
-      <el-divider />
-    </div>
+<!--    <div class="header" :style="headerStyle">-->
+<!--      <div class="logo-section">-->
+<!--        <img-->
+<!--          src="/icon/学マス-logo.png"-->
+<!--          alt="学マス"-->
+<!--          class="logo"-->
+<!--          draggable="false"-->
+<!--        />-->
+<!--        <h2 class="title">学マス</h2>-->
+<!--      </div>-->
+<!--      <el-divider />-->
+<!--    </div>-->
 
     <!-- 主要内容区域 -->
     <div class="content">
@@ -68,7 +68,7 @@
           @click="goToSettings"
         >
           <el-icon><Setting /></el-icon>
-          打开设置页面
+          插件设置
         </el-button>
 
       </div>

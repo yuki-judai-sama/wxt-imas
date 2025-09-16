@@ -6,7 +6,7 @@
       <el-menu-item index="logo" @click="openMemberLink(0)">
         <img
             style="max-height: 100%; height: auto; width: auto;"
-            src="/icon/学マス-logo.png"
+            src="/icon/学マス-title.png"
             draggable="false"
         />
       </el-menu-item>

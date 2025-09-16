@@ -9,7 +9,7 @@
           class="logo"
           draggable="false"
         />
-        <h1 class="title">学マス - 插件设置</h1>
+        <h1 class="title">插件设置</h1>
       </div>
       <el-divider />
     </div>

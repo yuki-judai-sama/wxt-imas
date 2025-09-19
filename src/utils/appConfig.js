@@ -1,3 +1,39 @@
+// 应用配置常量
+export const APP_CONFIG = {
+  // 应用信息
+  APP_NAME: '学マス主题浏览器扩展插件',
+  VERSION: '1.0.0',
+  CONTACT_EMAIL: 'yukijudai.sky@qq.com',
+  
+  // API配置
+  API_BASE_URL: 'http://127.0.0.1:8115',
+  TWITTER_API_ENDPOINT: '/TwitterController/getTwitterContent',
+  
+  // 存储键名
+  STORAGE_KEYS: {
+    DEFAULT_MEMBER: 'defaultMember',
+    DEFAULT_SEARCH_ENGINE: 'defaultSearchEngine',
+    CUSTOM_BG_URL: 'customBgUrl'
+  },
+  
+  // 文件上传限制
+  UPLOAD: {
+    MAX_FILE_SIZE: 4 * 1024 * 1024, // 4MB
+    COMPRESS_THRESHOLD: 3 * 1024 * 1024, // 3MB
+    COMPRESS_QUALITY: 0.8,
+    MAX_IMAGE_WIDTH: 1920
+  },
+  
+  // 时间更新间隔
+  TIME_UPDATE_INTERVAL: 1000,
+  
+  // 默认值
+  DEFAULTS: {
+    MEMBER: 'TsukimuraTemari',
+    SEARCH_ENGINE: 'google'
+  }
+};
+
 // 成员配置
 export const members = [
   { memberName: '花海 咲季', name: 'HanamiSaki', color: 'ff4f63', link: 'https://x.com/aoi___nagatsuki', twitter: 'aoi___nagatsuki' },
@@ -20,7 +56,4 @@ export const searchEngines = [
   { name: 'baidu', displayName: '百度', urlTemplate: 'https://www.baidu.com/s?wd=%keyword%' },
   { name: 'bilibili', displayName: '哔哩哔哩', urlTemplate: 'https://search.bilibili.com/all?keyword=%keyword%' },
   { name: 'biying', displayName: '必应', urlTemplate: 'https://www.bing.com/search?q=%keyword%' }
-]; 
-
-// 默认成员配置
-export const DEFAULT_MEMBER = 'TsukimuraTemari';
+];

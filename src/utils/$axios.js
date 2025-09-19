@@ -1,7 +1,8 @@
 import axios from "axios";
+import { APP_CONFIG } from '/src/utils/appConfig.js';
 
-// 修正 baseURL，确保带有协议双斜杠
-axios.defaults.baseURL = "http://103.109.23.45:8115";
+// 配置 axios
+axios.defaults.baseURL = APP_CONFIG.API_BASE_URL;
 
 export default axios;
 

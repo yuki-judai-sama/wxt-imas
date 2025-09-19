@@ -86,77 +86,33 @@
 </template>
 
 <script>
-import { members, DEFAULT_MEMBER } from '/src/config/appConfig.js'
-import { hexToRgb, toRgba } from '/src/utils/ui.js'
+import { APP_CONFIG, members } from '/src/utils/appConfig.js'
+import { hexToRgb, toRgba, getMemberDisplayName, storage, notifyNewTab } from '/src/utils/util.js'
 
 export default {
   name: "PopPlugin",
   data() {
     return {
-      // 当前选中的成员
-      selectedMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER
+      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER
     };
   },
   methods: {
-    // 直接复用 utils
     hexToRgb,
     toRgba,
-
-    // 获取成员对象
-    getMemberByName(name) {
-      return members.find(m => m.name === name);
-    },
+    getMemberDisplayName,
     
-    // 获取成员显示名称
-    getMemberDisplayName(memberName) {
-      const member = members.find(m => m.name === memberName);
-      return member ? member.memberName : memberName;
-    },
     // 切换成员主题
     changeMemberTheme(memberName) {
       this.selectedMember = memberName;
-      localStorage.setItem('defaultMember', memberName);
-      this.notifyNewTabThemeChange(memberName);
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, memberName);
+      notifyNewTab('THEME_CHANGE', { memberName });
     },
     
-    // 通知新标签页主题变更
-    notifyNewTabThemeChange(memberName) {
-      // Chrome storage 通知
-      if (chrome?.storage) {
-        try {
-          chrome.storage.local.set({ 
-            themeChange: { memberName, timestamp: Date.now() }
-          });
-        } catch (error) {
-          console.debug('Chrome storage 更新失败:', error);
-        }
-      }
-      
-      // Chrome tabs 消息通知
-      if (chrome?.tabs) {
-        try {
-          chrome.tabs.query({}, (tabs) => {
-            tabs.forEach(tab => {
-              if (tab.id && tab.url?.includes('entrypoints/newtab/index.html')) {
-                chrome.tabs.sendMessage(tab.id, {
-                  type: 'THEME_CHANGE',
-                  memberName
-                });
-              }
-            });
-          });
-        } catch (error) {
-          console.debug('发送消息失败:', error);
-        }
-      }
-    },
-    
-    // 跳转到设置页面（带降级兜底）
+    // 跳转到设置页面
     goToSettings() {
-      const url = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
-        ? chrome.runtime.getURL('options.html')
-        : 'options.html';
-      if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+      const url = chrome?.runtime?.getURL ? chrome.runtime.getURL('options.html') : 'options.html';
+      
+      if (chrome?.tabs?.create) {
         try {
           chrome.tabs.create({ url });
         } catch (_) {
@@ -165,9 +121,8 @@ export default {
       } else {
         window.open(url, '_blank');
       }
-      if (typeof window !== 'undefined' && typeof window.close === 'function') {
-        window.close();
-      }
+      
+      if (window?.close) window.close();
     },
     
     // 获取成员项样式
@@ -184,32 +139,25 @@ export default {
   mounted() {
     // 确保选中的成员在列表中
     if (!members.find(m => m.name === this.selectedMember)) {
-      this.selectedMember = DEFAULT_MEMBER;
+      this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
     }
   },
   computed: {
-    // 成员列表
     members() {
       return members;
     },
     
-    // 当前成员主题样式
     currentMemberTheme() {
       const member = members.find(m => m.name === this.selectedMember);
       if (!member) return { color: '#667eea', bgImage: '' };
       
-      const hex = member.color;
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      
+      const { r, g, b } = this.hexToRgb(member.color);
       return {
         color: `rgb(${r}, ${g}, ${b})`,
         bgImage: `/idol/${member.name}.png`
       };
     },
     
-    // 容器背景样式
     containerStyle() {
       return {
         backgroundImage: `url('${this.currentMemberTheme.bgImage}')`,
@@ -219,9 +167,7 @@ export default {
       };
     },
     
-    // 头部样式
     headerStyle() {
-      // 使用与 NewTab.vue 导航栏相同的透明毛玻璃效果
       return {
         background: 'rgba(255, 255, 255, 0.08)',
         backdropFilter: 'blur(25px) saturate(1.8)',
@@ -231,7 +177,6 @@ export default {
       };
     },
     
-    // 主题预览边框样式
     themePreviewStyle() {
       return {
         borderColor: this.currentMemberTheme.color
@@ -247,7 +192,7 @@ export default {
   width: 380px;
   min-height: 600px;
   max-height: 700px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
   color: #fff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;

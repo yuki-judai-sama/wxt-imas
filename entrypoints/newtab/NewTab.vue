@@ -219,15 +219,18 @@
 <!--*****************************************************************************************************************-->
 <script>
 import $axios from '/src/utils/$axios.js'
-import { members, searchEngines, DEFAULT_MEMBER } from '/src/config/appConfig.js'
-import { hexToRgb, toRgba, getMemberByName, getMemberByTwitter } from '/src/utils/ui.js'
+import { APP_CONFIG, members, searchEngines } from '/src/utils/appConfig.js'
+import { 
+  hexToRgb, toRgba, getMemberByName, getMemberByTwitter, getMemberDisplayName,
+  formatDate, convertLinks, getImageUrl, isCardImgUrl, storage, notifyNewTab
+} from '/src/utils/util.js'
 
 export default {
   name: "NewTab",
   data() {
     return {
       // 主题相关
-      selectMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,
+      selectMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER,
       
       // 搜索相关
       searchValue: null,
@@ -235,10 +238,7 @@ export default {
       searchFocused: false,
       
       // 时间相关
-      currentTime: {
-        time: '',
-        date: ''
-      },
+      currentTime: { time: '', date: '' },
       timeInterval: null,
       
       // 推文相关
@@ -246,59 +246,28 @@ export default {
       memberDrawerVisible: false,
       selectedFilterMember: null,
       filteredTwitterContent: [],
-      imageLoadErrors: {}, // 跟踪图片加载失败状态
-      settingsListener: null, // 设置变更监听器
-      customBgUrl: localStorage.getItem('customBgUrl') || null // 自定义背景图
+      imageLoadErrors: {},
+      settingsListener: null,
+      customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null
     };
   },
   methods: {
-    // 以下方法为轻薄封装，转调 utils，保证调用点不变
+    // 工具函数封装
     hexToRgb,
     toRgba,
-    getMemberByName(name) { return getMemberByName(this.members, name); },
-    getMemberByTwitter(twitter) { return getMemberByTwitter(this.members, twitter); },
+    getMemberByName,
+    getMemberByTwitter,
+    getMemberDisplayName,
+    formatDate,
+    convertLinks,
+    getImageUrl,
+    isCardImgUrl,
     
     // 获取初始搜索引擎索引
     getInitialSearchEngineIndex() {
-      const savedEngine = localStorage.getItem('defaultSearchEngine') || 'google';
+      const savedEngine = storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE) || APP_CONFIG.DEFAULTS.SEARCH_ENGINE;
       const engineIndex = searchEngines.findIndex(engine => engine.name === savedEngine);
       return engineIndex !== -1 ? engineIndex : 0;
-    },
-    // Nitter 图片到 pbs 映射
-    getImageUrl(url) {
-      if (!url) return url;
-      try {
-        // 只处理 nitter 的 /pic/ 链接
-        if (/^https?:\/\/[^\s]*nitter[^\s]*\/pic\//.test(url) || /^https?:\/\/nt\.kuuro\.net\/pic\//.test(url)) {
-          const u = url.replace(/^https?:\/\/[^\s]*nitter[^\s]*/i, 'https://nt.kuuro.net')
-                       .replace(/^https?:\/\/nt\.kuuro\.net/i, 'https://nt.kuuro.net');
-          // 解码 path 后做规则转换
-          const path = decodeURIComponent(u.split('/pic/')[1] || '');
-          // 几种常见前缀
-          // media/<filename> → pbs.twimg.com/media/<filename>
-          if (path.startsWith('media/')) {
-            return `https://pbs.twimg.com/${path}`;
-          }
-          // card_img/<id>/<rest>?format=jpg&name=800x419 → pbs.twimg.com/card_img/<id>/<rest>?format=jpg&name=orig
-          if (path.startsWith('card_img/')) {
-            const [p, query = ''] = path.split('?');
-            const sp = new URLSearchParams(query);
-            if (sp.has('name')) sp.set('name', 'orig');
-            return `https://pbs.twimg.com/${p}?${sp.toString()}`;
-          }
-          // amplify_video_thumb/... → pbs.twimg.com/amplify_video_thumb/...
-          if (path.startsWith('amplify_video_thumb/')) {
-            return `https://pbs.twimg.com/${path}`;
-          }
-          // img/<...> → pbs 也可以直连
-          if (path.startsWith('img/')) {
-            return `https://pbs.twimg.com/${path}`;
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-      return url;
     },
     // 处理搜索框聚焦
     handleSearchFocus() {
@@ -330,7 +299,7 @@ export default {
     // 启动时间更新
     startTimeUpdate() {
       this.updateTime();
-      this.timeInterval = setInterval(this.updateTime, 1000);
+      this.timeInterval = setInterval(this.updateTime, APP_CONFIG.TIME_UPDATE_INTERVAL);
     },
     
     // 停止时间更新
@@ -367,45 +336,6 @@ export default {
         window.open(this.members[index - 1].link, '_blank');
       }
     },
-    // 处理推文文本链接和标签
-    convertLinks(text) {
-      if (!text) return '';
-
-      // 移除引用推文链接
-      const quoteLinkRegex = /(?:(?:https?:\/\/)?)(?:x\.com|twitter\.com|(?:[a-zA-Z0-9-]+\.)*nitter[^\s\/]*|(?:[a-zA-Z0-9-]+\.)*kuuro\.net)\/[A-Za-z0-9_]+\/status\/\d+[^\s]*/gi;
-      const withoutQuoteLinks = text.replace(quoteLinkRegex, '');
-
-      // 转义 HTML 并处理换行
-      let processedText = withoutQuoteLinks
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br/>')
-          .trim();
-      
-      // 高亮普通链接
-      processedText = processedText.replace(/(https?:\/\/[a-zA-Z0-9\-._~:\/?#[\]@!$&'()*+,;=%]+)/g, (match, url) => {
-        return `<a href="${url}" target="_blank" style="color: #409EFF;">${url}</a>`;
-      });
-      
-      // 高亮话题标签
-      processedText = processedText.replace(/#([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+)(?![^<]*<\/a>)/g, (match, hashtag) => {
-        return `<a href="https://x.com/search?q=%23${hashtag}" target="_blank" style="color: #409EFF;">#${hashtag}</a>`;
-      });
-      
-      return processedText;
-    },
-    
-    // 格式化日期时间
-    formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    },
     // 获取成员头像名称
     getAvatarName(memberTwitter) {
       const member = this.getMemberByTwitter(memberTwitter);
@@ -414,7 +344,7 @@ export default {
     
     // 获取推文数据
     async getTwitterContent() {
-      $axios.post('/TwitterController/getTwitterContent').then(res => {
+      $axios.post(APP_CONFIG.TWITTER_API_ENDPOINT).then(res => {
         this.twitterContent = res.data;
         this.filterByMember(null);
       }).catch(err => {
@@ -447,10 +377,6 @@ export default {
         this.filterByMember(memberName);
       }
     },
-    // 判断是否为card_img格式的图片URL
-    isCardImgUrl(url) {
-      return url && url.includes('nitter.kuuro.net/pic/card_img');
-    },
     
     // 处理图片加载失败
     handleImageError(tweetId, index) {
@@ -469,7 +395,7 @@ export default {
     // 设置主题变更监听器
     setupThemeChangeListener() {
       const localStorageListener = (e) => {
-        if (e.key === 'defaultMember' && e.newValue) {
+        if (e.key === APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER && e.newValue) {
           this.handleThemeChange(e.newValue);
         }
       };
@@ -480,9 +406,9 @@ export default {
     // 设置设置变更监听器
     setupSettingsChangeListener() {
       const localStorageListener = (e) => {
-        if (e.key === 'defaultSearchEngine' && e.newValue) {
+        if (e.key === APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE && e.newValue) {
           this.handleSearchEngineChange(e.newValue);
-        } else if (e.key === 'customBgUrl') {
+        } else if (e.key === APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) {
           this.handleCustomBgChange(e.newValue);
         }
       };
@@ -520,7 +446,7 @@ export default {
       if (!member) return;
       
       this.selectMember = memberName;
-      localStorage.setItem('defaultMember', memberName);
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, memberName);
       this.updateThemeStyles(memberName, member);
       this.$forceUpdate();
     },

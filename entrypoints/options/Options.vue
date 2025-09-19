@@ -133,9 +133,9 @@
         </template>
         
         <div class="about-content">
-          <p><strong>插件名称：</strong>学マス主题浏览器扩展插件</p>
-          <p><strong>版本：</strong>1.0.0</p>
-            <p>如有问题反馈或功能建议，欢迎发送邮件至：<a href="mailto:yukijudai.sky@qq.com" style="color: #409EFF; text-decoration: none;">yukijudai.sky@qq.com</a></p>
+          <p><strong>插件名称：</strong>{{ APP_CONFIG.APP_NAME }}</p>
+          <p><strong>版本：</strong>{{ APP_CONFIG.VERSION }}</p>
+            <p>如有问题反馈或功能建议，欢迎发送邮件至：<a :href="`mailto:${APP_CONFIG.CONTACT_EMAIL}`" style="color: #409EFF; text-decoration: none;">{{ APP_CONFIG.CONTACT_EMAIL }}</a></p>
         </div>
       </el-card>
     </div>
@@ -152,7 +152,8 @@
 </template>
 
 <script>
-import { members, DEFAULT_MEMBER, searchEngines } from '/src/config/appConfig.js'
+import { APP_CONFIG, members, searchEngines } from '/src/utils/appConfig.js'
+import { storage, notifyNewTab } from '/src/utils/util.js'
 import { Plus } from '@element-plus/icons-vue'
 
 export default {
@@ -162,18 +163,14 @@ export default {
   },
   data() {
     return {
-      // 当前选中的成员
-      selectedMember: localStorage.getItem('defaultMember') || DEFAULT_MEMBER,
-      // 默认搜索引擎
-      defaultSearchEngine: localStorage.getItem('defaultSearchEngine') || 'google',
-      // 自定义背景图
-      customBgUrl: localStorage.getItem('customBgUrl') || null
+      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER,
+      defaultSearchEngine: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE) || APP_CONFIG.DEFAULTS.SEARCH_ENGINE,
+      customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null
     };
   },
   methods: {
     // 切换成员主题
     changeMemberTheme(memberName) {
-      // 验证成员是否存在
       const member = members.find(m => m.name === memberName);
       if (!member) {
         this.$message.error('无效的成员选择');
@@ -182,17 +179,12 @@ export default {
       
       this.selectedMember = memberName;
       try {
-        localStorage.setItem('defaultMember', memberName);
-        this.notifyNewTabThemeChange(memberName);
+        storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, memberName);
+        notifyNewTab('THEME_CHANGE', { memberName });
       } catch (error) {
         console.error('保存主题设置失败:', error);
         this.$message.error('保存设置失败，请重试');
       }
-    },
-    
-    // 通知新标签页主题变更
-    notifyNewTabThemeChange(memberName) {
-      this.notifyNewTab('THEME_CHANGE', { memberName });
     },
     
     // 保存设置
@@ -212,14 +204,14 @@ export default {
         }
         
         // 保存设置
-        localStorage.setItem('defaultMember', this.selectedMember);
-        localStorage.setItem('defaultSearchEngine', this.defaultSearchEngine);
+        storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, this.selectedMember);
+        storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE, this.defaultSearchEngine);
         
         // 保存自定义背景图
         if (this.customBgUrl) {
-          localStorage.setItem('customBgUrl', this.customBgUrl);
+          storage.set(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL, this.customBgUrl);
         } else {
-          localStorage.removeItem('customBgUrl');
+          storage.remove(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL);
         }
         
         // 通知新标签页设置变更
@@ -240,11 +232,11 @@ export default {
         type: 'warning'
       }).then(() => {
         try {
-          this.selectedMember = DEFAULT_MEMBER;
-          this.defaultSearchEngine = 'google';
+          this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
+          this.defaultSearchEngine = APP_CONFIG.DEFAULTS.SEARCH_ENGINE;
           this.customBgUrl = null;
           
-          localStorage.clear();
+          storage.clear();
           this.notifyNewTabSettingsChange();
           this.$message.success('设置已重置');
         } catch (error) {
@@ -258,39 +250,10 @@ export default {
     
     // 通知新标签页设置变更
     notifyNewTabSettingsChange() {
-      this.notifyNewTab('SETTINGS_CHANGE', { 
+      notifyNewTab('SETTINGS_CHANGE', { 
         defaultSearchEngine: this.defaultSearchEngine,
         customBgUrl: this.customBgUrl
       });
-    },
-    
-    // 通用通知新标签页方法
-    notifyNewTab(type, data) {
-      // Chrome storage 通知
-      if (chrome?.storage) {
-        try {
-          chrome.storage.local.set({ 
-            [type.toLowerCase()]: { ...data, timestamp: Date.now() }
-          });
-        } catch (error) {
-          console.debug('Chrome storage 更新失败:', error);
-        }
-      }
-      
-      // Chrome tabs 消息通知
-      if (chrome?.tabs) {
-        try {
-          chrome.tabs.query({}, (tabs) => {
-            tabs.forEach(tab => {
-              if (tab.id && (tab.url?.includes('newtab.html') || tab.url?.includes('entrypoints/newtab/index.html'))) {
-                chrome.tabs.sendMessage(tab.id, { type, ...data });
-              }
-            });
-          });
-        } catch (error) {
-          console.debug('发送消息失败:', error);
-        }
-      }
     },
     
     // 获取成员显示名称
@@ -322,10 +285,10 @@ export default {
         return false;
       }
       
-      // 检查文件大小（限制为4MB）
+      // 检查文件大小
       const fileSizeMB = file.size / 1024 / 1024;
-      if (fileSizeMB > 4) {
-        this.$message.error('图片大小不能超过 4MB!');
+      if (fileSizeMB > APP_CONFIG.UPLOAD.MAX_FILE_SIZE / 1024 / 1024) {
+        this.$message.error(`图片大小不能超过 ${APP_CONFIG.UPLOAD.MAX_FILE_SIZE / 1024 / 1024}MB!`);
         return false;
       }
       
@@ -337,14 +300,14 @@ export default {
       const file = options.file;
       const fileSizeMB = file.size / 1024 / 1024;
       
-      if (fileSizeMB < 3) {
-        // 小于3MB，不压缩
+      if (fileSizeMB < APP_CONFIG.UPLOAD.COMPRESS_THRESHOLD / 1024 / 1024) {
+        // 小于压缩阈值，不压缩
         this.processImage(file, 1.0);
-      } else if (fileSizeMB < 4) {
-        // 3-4MB，轻微压缩
-        this.processImage(file, 0.8);
+      } else if (fileSizeMB < APP_CONFIG.UPLOAD.MAX_FILE_SIZE / 1024 / 1024) {
+        // 在阈值和最大值之间，轻微压缩
+        this.processImage(file, APP_CONFIG.UPLOAD.COMPRESS_QUALITY);
       } else {
-        // 大于4MB，不允许上传（已在beforeBgUpload中处理）
+        // 大于最大值，不允许上传（已在beforeBgUpload中处理）
         return;
       }
     },
@@ -361,7 +324,7 @@ export default {
         
         if (quality < 1.0) {
           // 轻微压缩：适当缩小尺寸
-          const maxSize = 1920; // 最大宽度
+          const maxSize = APP_CONFIG.UPLOAD.MAX_IMAGE_WIDTH;
           if (width > maxSize) {
             height = (height * maxSize) / width;
             width = maxSize;
@@ -388,7 +351,7 @@ export default {
         
         this.customBgUrl = compressedDataUrl;
         // 立即保存到localStorage
-        localStorage.setItem('customBgUrl', this.customBgUrl);
+        storage.set(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL, this.customBgUrl);
         // 通知新标签页
         this.notifyNewTabSettingsChange();
       };
@@ -399,7 +362,7 @@ export default {
     // 删除自定义背景图
     removeCustomBg() {
       this.customBgUrl = null;
-      localStorage.removeItem('customBgUrl');
+      storage.remove(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL);
       this.notifyNewTabSettingsChange();
     },
     
@@ -414,12 +377,12 @@ export default {
         if (file && this.beforeBgUpload(file)) {
           const fileSizeMB = file.size / 1024 / 1024;
           
-          if (fileSizeMB < 3) {
-            // 小于3MB，不压缩
+          if (fileSizeMB < APP_CONFIG.UPLOAD.COMPRESS_THRESHOLD / 1024 / 1024) {
+            // 小于压缩阈值，不压缩
             this.processImage(file, 1.0);
-          } else if (fileSizeMB < 4) {
-            // 3-4MB，轻微压缩
-            this.processImage(file, 0.8);
+          } else if (fileSizeMB < APP_CONFIG.UPLOAD.MAX_FILE_SIZE / 1024 / 1024) {
+            // 在阈值和最大值之间，轻微压缩
+            this.processImage(file, APP_CONFIG.UPLOAD.COMPRESS_QUALITY);
           }
         }
       };
@@ -429,18 +392,23 @@ export default {
   mounted() {
     // 确保选中的成员在列表中
     if (!members.find(m => m.name === this.selectedMember)) {
-      this.selectedMember = DEFAULT_MEMBER;
-      localStorage.setItem('defaultMember', DEFAULT_MEMBER);
+      this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, APP_CONFIG.DEFAULTS.MEMBER);
     }
     
     // 验证默认搜索引擎
     const validEngines = searchEngines.map(engine => engine.name);
     if (!validEngines.includes(this.defaultSearchEngine)) {
-      this.defaultSearchEngine = 'google';
-      localStorage.setItem('defaultSearchEngine', 'google');
+      this.defaultSearchEngine = APP_CONFIG.DEFAULTS.SEARCH_ENGINE;
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE, APP_CONFIG.DEFAULTS.SEARCH_ENGINE);
     }
   },
   computed: {
+    // 应用配置
+    APP_CONFIG() {
+      return APP_CONFIG;
+    },
+    
     // 成员列表
     members() {
       return members;
@@ -479,7 +447,6 @@ export default {
     
     // 头部样式
     headerStyle() {
-      // 使用与 PopPlugin.vue 相同的透明毛玻璃效果
       return {
         background: 'rgba(255, 255, 255, 0.08)',
         backdropFilter: 'blur(25px) saturate(1.8)',

@@ -20,8 +20,12 @@
         <el-avatar :src="`/idol/headImg/${member.name}.png`" @dragstart.prevent/>
       </el-menu-item>
       <!-- 成员动态按钮 -->
-      <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="memberDrawerVisible=true">
-        <el-button type="primary" plain round>成员动态</el-button>
+      <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="openMemberDrawer">
+        <el-button type="primary" plain round>
+          成员动态
+          <!-- 未读推文红点提醒 -->
+          <span v-if="hasUnreadTweets" class="unread-badge"></span>
+        </el-button>
       </el-menu-item>
     </el-menu>
     
@@ -248,7 +252,8 @@ export default {
       filteredTwitterContent: [],
       imageLoadErrors: {},
       settingsListener: null,
-      customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null
+      customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
+      hasUnreadTweets: false // 是否有未读推文
     };
   },
   methods: {
@@ -347,6 +352,8 @@ export default {
       $axios.post(APP_CONFIG.TWITTER_API_ENDPOINT).then(res => {
         this.twitterContent = res.data;
         this.filterByMember(null);
+        // 检查是否有未读推文
+        this.checkUnreadTweets();
       }).catch(err => {
         console.error('获取推文数据失败:', err);
       });
@@ -499,6 +506,38 @@ export default {
         // 移除自定义的聚焦状态
         item.blur();
       });
+    },
+    
+    // 打开成员推文抽屉
+    openMemberDrawer() {
+      this.memberDrawerVisible = true;
+      // 记录当前第一条推文ID（标记为已读）
+      this.markTweetsAsRead();
+    },
+    
+    // 检查是否有未读推文
+    checkUnreadTweets() {
+      if (this.twitterContent.length === 0) {
+        this.hasUnreadTweets = false;
+        return;
+      }
+      
+      // 获取当前第一条推文ID
+      const currentFirstTweetId = this.twitterContent[0].id;
+      // 获取本地存储的最后已读推文ID
+      const lastReadTweetId = storage.get('lastReadTweetId');
+      
+      // 如果没有存储过推文ID（首次使用）或第一条推文ID与存储的不匹配，说明有未读推文
+      this.hasUnreadTweets = !lastReadTweetId || currentFirstTweetId !== lastReadTweetId;
+    },
+    
+    // 标记推文为已读
+    markTweetsAsRead() {
+      if (this.twitterContent.length > 0) {
+        const firstTweetId = this.twitterContent[0].id;
+        storage.set('lastReadTweetId', firstTweetId);
+        this.hasUnreadTweets = false;
+      }
     }
   },
   mounted() {
@@ -770,26 +809,6 @@ export default {
 /* 成员动态按钮特殊效果 - 在浅色背景下更突出 */
 ::v-deep(.el-menu-item:last-child .el-button) {
   position: relative;
-  overflow: hidden;
-}
-
-::v-deep(.el-menu-item:last-child .el-button::before) {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.2), 
-    transparent
-  );
-  transition: left 0.5s ease;
-}
-
-::v-deep(.el-menu-item:last-child .el-button:hover::before) {
-  left: 100%;
 }
 
 /* 添加微妙的发光效果 */
@@ -810,6 +829,32 @@ export default {
 
 ::v-deep(.el-menu-item:last-child .el-button:not(:hover)) {
   animation: buttonGlow 3s ease-in-out infinite;
+}
+
+/* 未读推文红点提醒样式 */
+.unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  background: #ff4757;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: visible;
+}
+
+/* 确保按钮有相对定位以支持红点 */
+::v-deep(.el-menu-item:last-child .el-button) {
+  position: relative;
+  overflow: visible;
+}
+
+/* 确保菜单项不会截取红点 */
+::v-deep(.el-menu-item:last-child) {
+  overflow: visible;
 }
 
 /* 顶部分割线 */

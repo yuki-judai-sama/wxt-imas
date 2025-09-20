@@ -48,6 +48,7 @@ export const members = [
   { memberName: '十王 星南', name: 'JuoSena', color: 'f7ad54', link: 'https://x.com/hitaka_mashiro', twitter: 'hitaka_mashiro' },
   { memberName: '姫崎 莉波', name: 'HimesakiRinami', color: 'fd7ec2', link: 'https://x.com/yuri_usui0515', twitter: 'yuri_usui0515' },
   { memberName: '秦谷 美鈴', name: 'HatayaMisuzu', color: 'A0B6DC', link: 'https://x.com/Harusaki_non', twitter: 'Harusaki_non' },
+  { memberName: '雨夜 燕', name: 'AmayaTsubame', color: 'a396f3', link: 'https://x.com/yukari_amane_', twitter: 'yukari_amane_' },
 ];
 
 // 搜索引擎配置

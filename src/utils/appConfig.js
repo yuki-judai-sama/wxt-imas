@@ -1,12 +1,12 @@
 // 应用配置常量
 export const APP_CONFIG = {
   // 应用信息
-  APP_NAME: '学マス主题浏览器扩展插件',
+  APP_NAME: '学マス',
   VERSION: '1.0.0',
   CONTACT_EMAIL: 'yukijudai.sky@qq.com',
   
   // API配置
-  API_BASE_URL: 'http://127.0.0.1:8115',
+  API_BASE_URL: 'http://103.109.23.45:8115',
   TWITTER_API_ENDPOINT: '/TwitterController/getTwitterContent',
   
   // 存储键名
@@ -16,7 +16,8 @@ export const APP_CONFIG = {
     CUSTOM_BG_URL: 'customBgUrl',
     SHOW_TIME_DISPLAY: 'showTimeDisplay',
     SHOW_SEARCH_BOX: 'showSearchBox',
-    SEARCH_BOX_SIZE: 'searchBoxSize'
+    SEARCH_BOX_SIZE: 'searchBoxSize',
+    SHOW_BOTTOM_BOOKMARK_BAR: 'showBottomBookmarkBar'
   },
   
   // 文件上传限制
@@ -36,7 +37,8 @@ export const APP_CONFIG = {
     SEARCH_ENGINE: 'google',
     SHOW_TIME_DISPLAY: true,
     SHOW_SEARCH_BOX: true,
-    SEARCH_BOX_SIZE: 'large'
+    SEARCH_BOX_SIZE: 'small',
+    SHOW_BOTTOM_BOOKMARK_BAR: true
   }
 };
 
@@ -67,7 +69,7 @@ export const searchEngines = [
 
 // 搜索框大小配置
 export const searchBoxSizes = [
-  { name: 'large', displayName: '大', description: '大型搜索框' },
+  { name: 'small', displayName: '小', description: '小型搜索框' },
   { name: 'medium', displayName: '中', description: '中型搜索框' },
-  { name: 'small', displayName: '小', description: '小型搜索框' }
+  { name: 'large', displayName: '大', description: '大型搜索框' }
 ];

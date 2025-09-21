@@ -67,7 +67,6 @@
           class="main-action-btn"
           @click="goToSettings"
         >
-          <el-icon><Setting /></el-icon>
           插件设置
         </el-button>
 

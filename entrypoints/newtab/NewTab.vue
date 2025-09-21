@@ -149,7 +149,6 @@
           <!-- 推文来源信息 -->
           <div v-if="tweet.source_user && tweet.source_user !== tweet.member"
                class="tweet-source-info">
-            <i class="el-icon-location"></i>
             此推文来自 
             <strong @click="openMemberTwitterPage(tweet.source_user)">@{{ tweet.source_user }}</strong> 
             的时间线
@@ -189,7 +188,6 @@
               rel="noopener noreferrer"
                 class="tweet-link"
           >
-              <i class="el-icon-link"></i>
             打开推文
           </a>
             <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
@@ -203,7 +201,6 @@
       <!-- 筛选状态提示 -->
       <div v-if="selectedFilterMember && filteredTwitterContent.length > 0" class="filter-status">
         <div class="filter-info">
-          <i class="el-icon-filter"></i>
           当前显示：@{{ getMemberByName(selectedFilterMember)?.twitter || selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
         </div>
         <el-button
@@ -212,7 +209,6 @@
             @click="filterByMember(null)"
             class="clear-filter-btn"
         >
-          <i class="el-icon-refresh"></i>
           显示全部
         </el-button>
       </div>
@@ -275,6 +271,141 @@
       </div>
     </div>
     
+    <!-- 书签管理模态框 -->
+    <div v-if="bookmarkDialogVisible" class="bookmark-modal" @click="closeBookmarkDialog">
+      <div class="bookmark-modal-content" :style="bookmarkBackgroundStyle" @click.stop>
+        <!-- 头部 -->
+        <div class="bookmark-header">
+          <button class="bookmark-back-btn" @click="goBackToToolbar" title="回到工具箱">
+            <img src="/utils/back.png" alt="返回" class="back-icon" draggable="false" />
+          </button>
+          <h2 class="bookmark-title-header">书签管理</h2>
+          <button class="bookmark-close-btn" @click="closeBookmarkDialog">×</button>
+        </div>
+        
+        <!-- 主体内容 -->
+        <div class="bookmark-body">
+          <div class="bookmark-grid">
+            <!-- 书签项 -->
+            <div 
+              v-for="item in bookmarkItems" 
+              :key="item.id" 
+              class="bookmark-item" 
+              @click="handleBookmarkClick(item)"
+            >
+              <!-- 删除按钮 -->
+              <div 
+                v-if="item.canDelete" 
+                class="bookmark-delete-btn" 
+                @click.stop="deleteBookmark(item.id.split('-')[1])"
+                title="删除书签"
+              >
+                <img src="/utils/delete.png" alt="删除" class="delete-icon" draggable="false" />
+              </div>
+              
+              <div class="bookmark-icon-wrapper">
+                <div class="bookmark-icon-circle">
+                  <img 
+                    :src="item.icon" 
+                    :alt="item.title" 
+                    class="bookmark-icon-img" 
+                    draggable="false"
+                    @error="handleIconError"
+                  />
+                </div>
+              </div>
+              <div class="bookmark-title">{{ item.title }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 新增书签表单模态框 -->
+    <div v-if="addBookmarkDialogVisible" class="add-bookmark-modal" @click="closeAddBookmarkDialog">
+      <div class="add-bookmark-modal-content" :style="bookmarkBackgroundStyle" @click.stop>
+        <!-- 头部 -->
+        <div class="add-bookmark-header">
+          <button class="add-bookmark-back-btn" @click="closeAddBookmarkDialog" title="返回书签管理">
+            <img src="/utils/back.png" alt="返回" class="back-icon" draggable="false" />
+          </button>
+          <h2 class="add-bookmark-title-header">新增书签</h2>
+        </div>
+        
+        <!-- 表单内容 -->
+        <div class="add-bookmark-body">
+          <div class="add-bookmark-form">
+            <div class="form-group">
+              <label class="form-label">网址地址</label>
+              <input 
+                v-model="newBookmark.url" 
+                type="url" 
+                class="form-input" 
+                placeholder="请输入网址，如：https://www.bilibili.com"
+                @input="handleUrlInput"
+              />
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">备注</label>
+              <input 
+                v-model="newBookmark.title" 
+                type="text" 
+                class="form-input" 
+                placeholder="请输入备注，如：哔哩哔哩"
+                maxlength="20"
+              />
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">图标预览</label>
+              <div class="icon-preview">
+                <img 
+                  :src="newBookmark.icon" 
+                  alt="图标预览" 
+                  class="preview-icon"
+                  draggable="false"
+                  @error="handleIconError"
+                />
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button class="cancel-btn" @click="closeAddBookmarkDialog">取消</button>
+              <button class="save-btn" @click="saveNewBookmark">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 底部横向书签栏 -->
+    <div v-if="showBottomBookmarkBar" class="bottom-bookmark-bar" @wheel="handleBookmarkBarScroll">
+      <div class="bookmark-bar-container">
+        <div class="bookmark-bar-scroll" ref="bookmarkBarScroll">
+          <div 
+            v-for="bookmark in bookmarks" 
+            :key="bookmark.id" 
+            class="bottom-bookmark-item"
+            @click="openBookmarkUrl(bookmark.url)"
+            :title="bookmark.title"
+          >
+            <img 
+              :src="bookmark.icon" 
+              :alt="bookmark.title" 
+              class="bottom-bookmark-icon"
+              draggable="false"
+              @error="handleIconError"
+            />
+          </div>
+          <!-- 空状态提示 -->
+          <div v-if="bookmarks.length === 0" class="bookmark-empty-hint">
+            <span>暂无书签，请前往工具箱添加</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
   </div>
 </template>
 <!--*****************************************************************************************************************-->
@@ -316,9 +447,21 @@ export default {
       showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
       showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
       searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE,
+      showBottomBookmarkBar: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR), APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR),
       
       // 工具栏相关
       toolbarDialogVisible: false,
+      // 书签管理相关
+      bookmarkDialogVisible: false,
+      bookmarks: [], // 存储用户的书签
+      // 新增书签表单相关
+      addBookmarkDialogVisible: false,
+      newBookmark: {
+        url: '',
+        title: '',
+        icon: '/utils/collect.png' // 默认图标
+      },
+      urlInputTimer: null, // URL输入防抖定时器
       toolbarItems: [
         { id: 1, title: '书签', icon: '/utils/collect.png' },
         { id: 2, title: '機能追加予定', icon: '/utils/pending.png' },
@@ -519,6 +662,8 @@ export default {
           this.handleSearchBoxChange(e.newValue);
         } else if (e.key === APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) {
           this.handleSearchBoxSizeChange(e.newValue);
+        } else if (e.key === APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR) {
+          this.handleBottomBookmarkBarChange(e.newValue);
         }
       };
       window.addEventListener('storage', localStorageListener);
@@ -608,6 +753,11 @@ export default {
       this.searchBoxSize = searchBoxSize || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE;
     },
     
+    // 处理底部书签栏显示变更
+    handleBottomBookmarkBarChange(showBottomBookmarkBar) {
+      this.showBottomBookmarkBar = this.parseBooleanSetting(showBottomBookmarkBar, APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR);
+    },
+    
     // 处理设置变更（统一入口）
     handleSettingsChange(data) {
       if (!data) return;
@@ -626,6 +776,9 @@ export default {
       }
       if (data.searchBoxSize) {
         this.handleSearchBoxSizeChange(data.searchBoxSize);
+      }
+      if (data.showBottomBookmarkBar !== undefined) {
+        this.handleBottomBookmarkBarChange(data.showBottomBookmarkBar);
       }
     },
     
@@ -705,8 +858,13 @@ export default {
     
     // 处理工具栏点击
     handleToolbarClick(item) {
-      console.log(`点击了功能: ${item.title}`);
-      // TODO: 实现具体功能
+      if (item.id === 1 && item.title === '书签') {
+        // 点击书签，打开书签管理页面
+        this.toolbarDialogVisible = false;
+        this.bookmarkDialogVisible = true;
+      } else {
+        // TODO: 实现其他功能
+      }
     },
     
     // 关闭工具栏
@@ -714,11 +872,241 @@ export default {
       this.toolbarDialogVisible = false;
     },
     
+    // 关闭书签管理页面
+    closeBookmarkDialog() {
+      this.bookmarkDialogVisible = false;
+    },
+    
+    // 回到工具箱
+    goBackToToolbar() {
+      this.bookmarkDialogVisible = false;
+      this.toolbarDialogVisible = true;
+    },
+    
+    // 处理书签项点击
+    handleBookmarkClick(bookmark) {
+      if (bookmark.id === 'add-bookmark') {
+        // 打开新增书签表单
+        this.bookmarkDialogVisible = false;
+        this.addBookmarkDialogVisible = true;
+        this.resetNewBookmarkForm();
+      } else {
+        // 打开书签链接
+        window.open(bookmark.url, '_blank');
+      }
+    },
+    
+    // 重置新增书签表单
+    resetNewBookmarkForm() {
+      this.newBookmark = {
+        url: '',
+        title: '',
+        icon: '/utils/collect.png'
+      };
+    },
+    
+    // 关闭新增书签表单
+    closeAddBookmarkDialog() {
+      this.addBookmarkDialogVisible = false;
+      this.bookmarkDialogVisible = true;
+    },
+    
+    // 保存新书签
+    async saveNewBookmark() {
+      if (!this.newBookmark.url.trim()) {
+        alert('请输入网址');
+        return;
+      }
+      
+      // 如果用户没有输入备注，使用默认值
+      if (!this.newBookmark.title.trim()) {
+        this.newBookmark.title = '新书签';
+      }
+      
+      // 检查是否已达到最大书签数量
+      if (this.bookmarks.length >= 15) {
+        alert('最多只能保存15个书签');
+        return;
+      }
+      
+      try {
+        // 规范化URL（确保有协议）
+        let normalizedUrl = this.newBookmark.url.trim();
+        if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+          normalizedUrl = 'https://' + normalizedUrl;
+        }
+        
+        // 获取网站图标（Google会自动处理图标不存在的情况）
+        this.newBookmark.icon = await this.getWebsiteIcon(normalizedUrl);
+        
+        // 添加到书签列表
+        const bookmark = {
+          id: Date.now(), // 使用时间戳作为唯一ID
+          url: normalizedUrl, // 使用规范化后的URL
+          title: this.newBookmark.title.trim(),
+          icon: this.newBookmark.icon,
+          createdAt: new Date().toISOString()
+        };
+        
+        this.bookmarks.push(bookmark);
+        
+        // 保存到storage
+        this.saveBookmarksToStorage();
+        
+        // 关闭表单，返回书签管理页面
+        this.closeAddBookmarkDialog();
+        
+      } catch (error) {
+        console.error('保存书签失败:', error);
+        alert('保存书签失败，请重试');
+      }
+    },
+    
+    // 获取网站图标
+    async getWebsiteIcon(url) {
+      try {
+        // 确保URL有协议
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          url = 'https://' + url;
+        }
+        
+        const domain = new URL(url).hostname;
+        
+        // 简单的域名格式验证
+        if (!this.isValidDomain(domain)) {
+          return '/utils/collect.png';
+        }
+        
+        // 使用Google Favicon API
+        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+        
+        return faviconUrl;
+        
+      } catch (error) {
+        console.error('获取网站图标失败:', error);
+        return '/utils/collect.png';
+      }
+    },
+    
+    // 简单的域名格式验证
+    isValidDomain(domain) {
+      // 基本的域名格式检查
+      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?(\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?)*$/;
+      return domainRegex.test(domain) && domain.length > 3 && domain.length < 255;
+    },
+    
+    
+    // 保存书签到storage
+    saveBookmarksToStorage() {
+      storage.set('userBookmarks', JSON.stringify(this.bookmarks));
+    },
+    
+    // 从storage加载书签
+    loadBookmarksFromStorage() {
+      const savedBookmarksStr = storage.get('userBookmarks');
+      if (savedBookmarksStr) {
+        try {
+          const savedBookmarks = JSON.parse(savedBookmarksStr);
+          if (Array.isArray(savedBookmarks)) {
+            // 保留所有书签，但修复图标URL
+            this.bookmarks = savedBookmarks.map(bookmark => {
+              try {
+                if (bookmark.url) {
+                  const domain = new URL(bookmark.url).hostname;
+                  if (this.isValidDomain(domain)) {
+                    // 如果URL有效，重新生成图标URL
+                    bookmark.icon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                  } else {
+                    // 如果URL无效，使用本地图标
+                    bookmark.icon = '/utils/collect.png';
+                  }
+                } else {
+                  // 如果没有URL，使用本地图标
+                  bookmark.icon = '/utils/collect.png';
+                }
+              } catch (error) {
+                // URL解析失败，使用本地图标
+                bookmark.icon = '/utils/collect.png';
+              }
+              return bookmark;
+            });
+          }
+        } catch (error) {
+          console.error('解析书签数据失败:', error);
+          // 解析失败时不自动清空书签，保持原有书签数据
+        }
+      }
+    },
+    
+    // 处理图标加载错误
+    handleIconError(event) {
+      // 当图标加载失败时，自动切换到本地图标
+      event.target.src = '/utils/collect.png';
+    },
+    
+    // 处理URL输入（防抖处理）
+    handleUrlInput() {
+      // 清除之前的定时器
+      if (this.urlInputTimer) {
+        clearTimeout(this.urlInputTimer);
+      }
+      
+      // 设置防抖定时器，500ms后执行
+      this.urlInputTimer = setTimeout(async () => {
+        if (this.newBookmark.url.trim()) {
+          try {
+            // 获取图标（Google会自动处理图标不存在的情况）
+            this.newBookmark.icon = await this.getWebsiteIcon(this.newBookmark.url);
+        } catch (error) {
+          console.error('获取网站图标失败:', error);
+          // 出错时使用本地图标
+          this.newBookmark.icon = '/utils/collect.png';
+        }
+        }
+      }, 500);
+    },
+    
+    // 删除书签
+    deleteBookmark(bookmarkId) {
+      // 直接删除，不需要确认
+      // 从书签数组中移除指定ID的书签
+      this.bookmarks = this.bookmarks.filter(bookmark => bookmark.id !== parseInt(bookmarkId));
+      // 保存到storage
+      this.saveBookmarksToStorage();
+    },
+    
     // 键盘事件处理（工具栏专用）
     handleToolbarKeydown(e) {
-      if (e.key === 'Escape' && this.toolbarDialogVisible) {
+      if (e.key === 'Escape') {
+        if (this.toolbarDialogVisible) {
         this.closeToolbar();
+        } else if (this.bookmarkDialogVisible) {
+          this.closeBookmarkDialog();
+        } else if (this.addBookmarkDialogVisible) {
+          this.closeAddBookmarkDialog();
+        }
       }
+    },
+    
+    // 处理底部书签栏滚动
+    handleBookmarkBarScroll(e) {
+      e.preventDefault();
+      const scrollContainer = this.$refs.bookmarkBarScroll;
+      if (scrollContainer) {
+        const scrollAmount = 120; // 每次滚动的距离
+        if (e.deltaY > 0) {
+          // 向下滚动，向右移动
+          scrollContainer.scrollLeft += scrollAmount;
+        } else {
+          // 向上滚动，向左移动
+          scrollContainer.scrollLeft -= scrollAmount;
+        }
+      }
+    },
+    
+    // 打开书签链接
+    openBookmarkUrl(url) {
+      window.open(url, '_blank');
     }
   },
   mounted() {
@@ -737,8 +1125,10 @@ export default {
     this.updateCustomBackground();
     // 根据设置启动时间更新
     if (this.showTimeDisplay) {
-      this.startTimeUpdate();
+    this.startTimeUpdate();
     }
+    // 加载书签数据
+    this.loadBookmarksFromStorage();
   },
   
   beforeUnmount() {
@@ -751,6 +1141,10 @@ export default {
     }
     if (this.settingsListener) {
       window.removeEventListener('storage', this.settingsListener);
+    }
+    // 清理防抖定时器
+    if (this.urlInputTimer) {
+      clearTimeout(this.urlInputTimer);
     }
     // 停止时间更新
     this.stopTimeUpdate();
@@ -827,6 +1221,48 @@ export default {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       };
+    },
+    
+    // 书签背景样式
+    bookmarkBackgroundStyle() {
+      const member = this.members[this.selectMemberThemeIndex];
+      const bgImage = `/idol/${member.name}.png`;
+      
+      return {
+        backgroundImage: `url('${bgImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    },
+    
+    // 书签项列表
+    bookmarkItems() {
+      const items = [];
+      
+      // 首先添加用户的书签
+      this.bookmarks.forEach((bookmark) => {
+        items.push({
+          id: `bookmark-${bookmark.id}`,
+          title: bookmark.title || '未命名书签',
+          icon: bookmark.icon || '/utils/collect.png',
+          url: bookmark.url,
+          canDelete: true // 标记可以删除
+        });
+      });
+      
+      // 只有当书签数量小于15时，才添加"新增书签"按钮
+      if (this.bookmarks.length < 15) {
+        items.push({
+          id: 'add-bookmark', 
+          title: '新增书签', 
+          icon: '/utils/addBookMark.png', 
+          url: null,
+          canDelete: false // 新增按钮不能删除
+        });
+      }
+      
+      return items;
     }
   }
 };
@@ -1534,6 +1970,26 @@ export default {
   box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
 }
 
+/* 小尺寸搜索框的横条特效调整 */
+.search-container.search-small .search-underline {
+  bottom: 6px;
+  height: 2px;
+}
+
+.search-container.search-small .search-wrapper.focused .search-underline {
+  width: 75%;
+}
+
+/* 中等尺寸搜索框的横条特效调整 */
+.search-container.search-medium .search-underline {
+  bottom: 7px;
+  height: 2.5px;
+}
+
+.search-container.search-medium .search-wrapper.focused .search-underline {
+  width: 80%;
+}
+
 /* 添加微妙的呼吸动画 */
 @keyframes gentlePulse {
   0%, 100% {
@@ -1565,6 +2021,15 @@ export default {
 }
 
 ::v-deep(.el-image img) {    /*禁用el-image内部img拖拽*/
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* 全局禁用所有图片拖拽 */
+img {
   -webkit-user-drag: none;
   -khtml-user-drag: none;
   -moz-user-drag: none;
@@ -1875,5 +2340,601 @@ html, body, #app {  /*清除自带外边框*/
 .toolbar-item:not(:hover) {
   animation: subtleGlow 3s ease-in-out infinite;
 }
+
+/* 书签管理模态框样式 */
+.bookmark-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.bookmark-modal-content {
+  width: 75vw;
+  height: 80vh;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 添加遮罩层增强毛玻璃效果 */
+.bookmark-modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  border-radius: 16px;
+}
+
+.bookmark-header {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  z-index: 2;
+}
+
+.bookmark-back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-right: 12px;
+  z-index: 10;
+  position: relative;
+}
+
+.bookmark-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.back-icon {
+    width: 20px;
+    height: 20px;
+  filter: brightness(0) invert(1);
+}
+
+.bookmark-title-header {
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.bookmark-close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.bookmark-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.bookmark-body {
+  flex: 1;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px) saturate(1.5);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+/* 书签网格布局 - 三行五列 */
+.bookmark-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.bookmark-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.bookmark-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.delete-icon {
+  width: 12px;
+  height: 12px;
+  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
+}
+
+.bookmark-item:hover .bookmark-delete-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.bookmark-delete-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.bookmark-item:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(22px) saturate(1.8);
+  -webkit-backdrop-filter: blur(22px) saturate(1.8);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.bookmark-icon-wrapper {
+  margin-bottom: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bookmark-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  z-index: 2;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.bookmark-item:hover .bookmark-icon-circle {
+  background: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(15px) saturate(1.5);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  border-color: rgba(255, 255, 255, 1);
+  transform: scale(1.05);
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.bookmark-icon-img {
+  width: 28px;
+  height: 28px;
+  filter: none;
+  transition: all 0.3s ease;
+}
+
+.bookmark-item:hover .bookmark-icon-img {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.bookmark-title {
+  font-size: 13px;
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.bookmark-item:hover .bookmark-title {
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* 书签项的微妙发光动画 */
+.bookmark-item:not(:hover) {
+  animation: subtleGlow 3s ease-in-out infinite;
+}
+
+/* 新增书签表单模态框样式 */
+.add-bookmark-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.add-bookmark-modal-content {
+  width: 400px;
+  height: 500px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 添加遮罩层增强毛玻璃效果 */
+.add-bookmark-modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  border-radius: 16px;
+}
+
+.add-bookmark-header {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  z-index: 2;
+}
+
+.add-bookmark-back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-right: 12px;
+  z-index: 10;
+  position: relative;
+}
+
+.add-bookmark-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.add-bookmark-back-btn .back-icon {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1);
+}
+
+.add-bookmark-title-header {
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.add-bookmark-body {
+  flex: 1;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px) saturate(1.5);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.add-bookmark-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.icon-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.preview-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+.form-actions {
+  display: flex;
+    gap: 12px;
+  margin-top: 20px;
+}
+
+.cancel-btn, .save-btn {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.save-btn:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6b4c93 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 底部横向书签栏样式 */
+.bottom-bookmark-bar {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 60px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  box-sizing: border-box;
+  width: 420px; /* 固定宽度，精确显示7个书签 */
+}
+
+.bookmark-bar-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bookmark-bar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  padding: 0 10px;
+  box-sizing: border-box;
+  /* 隐藏滚动条但保持滚动功能 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.bookmark-bar-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.bottom-bookmark-item {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.bottom-bookmark-item:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-3px) scale(1.08);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.bottom-bookmark-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  transition: all 0.3s ease;
+}
+
+.bottom-bookmark-item:hover .bottom-bookmark-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+/* 空状态提示样式 */
+.bookmark-empty-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+
 
 </style>

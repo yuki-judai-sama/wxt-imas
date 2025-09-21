@@ -20,7 +20,6 @@
       <el-card class="settings-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <el-icon><Setting /></el-icon>
             <span>主题设置</span>
           </div>
         </template>
@@ -66,27 +65,14 @@
         </div>
       </el-card>
 
-      <!-- 功能设置区域 -->
+      <!-- 页面组件设置区域 -->
       <el-card class="settings-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <el-icon><Tools /></el-icon>
-            <span>功能设置</span>
+            <span>页面组件设置</span>
           </div>
         </template>
         
-        <div class="setting-item">
-          <label class="setting-label">默认搜索引擎</label>
-          <el-select v-model="defaultSearchEngine" placeholder="选择默认搜索引擎" style="width: 200px">
-            <el-option
-              v-for="engine in searchEngines"
-              :key="engine.name"
-              :label="engine.displayName"
-              :value="engine.name"
-            />
-          </el-select>
-        </div>
-
         <div class="setting-item">
           <label class="setting-label">显示时间</label>
           <el-switch v-model="showTimeDisplay" @change="handleTimeDisplayChange" />
@@ -95,6 +81,11 @@
         <div class="setting-item">
           <label class="setting-label">显示搜索框</label>
           <el-switch v-model="showSearchBox" @change="handleSearchBoxChange" />
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">显示底部书签栏</label>
+          <el-switch v-model="showBottomBookmarkBar" @change="handleBottomBookmarkBarChange" />
         </div>
 
         <div class="setting-item">
@@ -109,6 +100,27 @@
               <span style="float: left">{{ size.displayName }}</span>
               <span style="float: right; color: #8492a6; font-size: 13px">{{ size.description }}</span>
             </el-option>
+          </el-select>
+        </div>
+      </el-card>
+
+      <!-- 功能设置区域 -->
+      <el-card class="settings-card" shadow="hover">
+        <template #header>
+          <div class="card-header">
+            <span>功能设置</span>
+          </div>
+        </template>
+        
+        <div class="setting-item">
+          <label class="setting-label">默认搜索引擎</label>
+          <el-select v-model="defaultSearchEngine" placeholder="选择默认搜索引擎" style="width: 200px">
+            <el-option
+              v-for="engine in searchEngines"
+              :key="engine.name"
+              :label="engine.displayName"
+              :value="engine.name"
+            />
           </el-select>
         </div>
 
@@ -152,7 +164,6 @@
       <el-card class="settings-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <el-icon><InfoFilled /></el-icon>
             <span>关于</span>
           </div>
         </template>
@@ -179,12 +190,12 @@
 <script>
 import { APP_CONFIG, members, searchEngines, searchBoxSizes } from '/src/utils/appConfig.js'
 import { storage, notifyNewTab } from '/src/utils/util.js'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus} from '@element-plus/icons-vue'
 
 export default {
   name: "Options",
   components: {
-    Plus
+    Plus,
   },
   data() {
     return {
@@ -193,7 +204,8 @@ export default {
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
       showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
       showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
-      searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE
+      searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE,
+      showBottomBookmarkBar: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR), APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR)
     };
   },
   methods: {
@@ -241,6 +253,16 @@ export default {
       });
     },
     
+    // 处理底部书签栏显示变更
+    handleBottomBookmarkBarChange(value) {
+      // 立即保存到本地存储
+      storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR, value);
+      // 立即通知新标签页
+      notifyNewTab('SETTINGS_CHANGE', { 
+        showBottomBookmarkBar: value
+      });
+    },
+    
     // 切换成员主题
     changeMemberTheme(memberName) {
       const member = members.find(m => m.name === memberName);
@@ -281,6 +303,7 @@ export default {
         storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY, this.showTimeDisplay);
         storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX, this.showSearchBox);
         storage.set(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE, this.searchBoxSize);
+        storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR, this.showBottomBookmarkBar);
         
         // 保存自定义背景图
         if (this.customBgUrl) {
@@ -313,6 +336,7 @@ export default {
           this.showTimeDisplay = APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY;
           this.showSearchBox = APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX;
           this.searchBoxSize = APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE;
+          this.showBottomBookmarkBar = APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR;
           
           storage.clear();
           this.notifyNewTabSettingsChange();
@@ -333,7 +357,8 @@ export default {
         customBgUrl: this.customBgUrl,
         showTimeDisplay: this.showTimeDisplay,
         showSearchBox: this.showSearchBox,
-        searchBoxSize: this.searchBoxSize
+        searchBoxSize: this.searchBoxSize,
+        showBottomBookmarkBar: this.showBottomBookmarkBar
       });
     },
     

@@ -38,10 +38,7 @@
     </div>
     
     <!-- 搜索输入框 -->
-    <div v-if="showSearchBox" class="search-container" :class="{ 
-      'no-time-display': !showTimeDisplay,
-      [`search-${searchBoxSize}`]: true 
-    }">
+    <div v-if="showSearchBox" class="search-container" :class="[`search-${searchBoxSize}`]">
       <div class="search-wrapper" :class="{ 'focused': searchFocused }">
         <div class="search-icon">
           <img
@@ -1332,7 +1329,6 @@ export default {
 .time-container {
   display: flex;
   justify-content: center;
-  margin-top: 0px;
   margin-bottom: 20px;
 }
 
@@ -1362,15 +1358,13 @@ export default {
 
 /* 搜索容器样式 */
 .search-container {
+  position: absolute;
+  top: 150px;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: center;
-  margin-top: 0;
   padding: 0 20px;
-}
-
-/* 当时间显示被隐藏时，搜索框的顶部间距 */
-.search-container.no-time-display {
-  margin-top: 80px;
 }
 
 /* 搜索框大小样式 */

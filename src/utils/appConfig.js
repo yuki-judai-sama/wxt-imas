@@ -36,7 +36,7 @@ export const APP_CONFIG = {
     SEARCH_ENGINE: 'google',
     SHOW_TIME_DISPLAY: true,
     SHOW_SEARCH_BOX: true,
-    SEARCH_BOX_SIZE: 'small'
+    SEARCH_BOX_SIZE: 'large'
   }
 };
 
@@ -67,7 +67,7 @@ export const searchEngines = [
 
 // 搜索框大小配置
 export const searchBoxSizes = [
-  { name: 'large', displayName: '大', description: '大号搜索框' },
-  { name: 'medium', displayName: '中', description: '中号搜索框' },
-  { name: 'small', displayName: '小', description: '小号搜索框' }
+  { name: 'large', displayName: '大', description: '大型搜索框' },
+  { name: 'medium', displayName: '中', description: '中型搜索框' },
+  { name: 'small', displayName: '小', description: '小型搜索框' }
 ];

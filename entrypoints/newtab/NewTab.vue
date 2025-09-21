@@ -158,18 +158,8 @@
           <div v-if="tweet.media && tweet.media.length > 0" class="tweet-media">
             <div v-for="(img, i) in tweet.media" :key="i" class="tweet-image-container">
               <img
-                  v-if="isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
+                  v-if="!imageLoadErrors[`${tweet.id}-${i}`]"
                   :src="getImageUrl(img)"
-                  :alt="`图片 ${i + 1}`"
-                  loading="lazy"
-                  class="tweet-image"
-                  draggable="false"
-                  @error="handleImageError(tweet.id, i)"
-                  @load="handleImageLoad(tweet.id, i)"
-              />
-              <img
-                  v-else-if="!isCardImgUrl(img) && !imageLoadErrors[`${tweet.id}-${i}`]"
-              :src="getImageUrl(img)"
                   :alt="`图片 ${i + 1}`"
                   loading="lazy"
                   class="tweet-image"
@@ -182,14 +172,14 @@
 
           <!-- 推文操作 -->
           <div class="tweet-actions">
-          <a
-              :href="`https://x.com/${tweet.member}/status/${tweet.id}`"
-              target="_blank"
-              rel="noopener noreferrer"
+            <a
+                :href="`https://x.com/${tweet.member}/status/${tweet.id}`"
+                target="_blank"
+                rel="noopener noreferrer"
                 class="tweet-link"
-          >
-            打开推文
-          </a>
+            >
+              打开推文
+            </a>
             <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
                   class="tweet-original">
               原始推文
@@ -1719,9 +1709,6 @@ export default {
   transform: translateX(2px);
 }
 
-.tweet-link i {
-  margin-right: 4px;
-}
 
 .tweet-original {
   font-size: 12px;
@@ -1746,10 +1733,6 @@ export default {
   color: #666;
 }
 
-.filter-info i {
-  margin-right: 6px;
-  color: #667eea;
-}
 
 .clear-filter-btn {
   border-radius: 20px;
@@ -1757,9 +1740,6 @@ export default {
   font-size: 12px;
 }
 
-.clear-filter-btn i {
-  margin-right: 4px;
-}
 
 /* 时间显示容器 - 输入框上方 */
 .time-container {
@@ -2934,7 +2914,5 @@ html, body, #app {  /*清除自带外边框*/
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   white-space: nowrap;
 }
-
-
 
 </style>

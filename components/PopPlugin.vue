@@ -1,19 +1,6 @@
 
 <template>
   <div class="popup-container" :style="containerStyle">
-    <!-- 头部区域 -->
-<!--    <div class="header" :style="headerStyle">-->
-<!--      <div class="logo-section">-->
-<!--        <img-->
-<!--          src="/utils/学マス-logo.png"-->
-<!--          alt="学マス"-->
-<!--          class="logo"-->
-<!--          draggable="false"-->
-<!--        />-->
-<!--        <h2 class="title">学マス</h2>-->
-<!--      </div>-->
-<!--      <el-divider />-->
-<!--    </div>-->
 
     <!-- 主要内容区域 -->
     <div class="content">
@@ -166,15 +153,6 @@ export default {
       };
     },
     
-    headerStyle() {
-      return {
-        background: 'rgba(255, 255, 255, 0.08)',
-        backdropFilter: 'blur(25px) saturate(1.8)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-        border: '1px solid rgba(255, 255, 255, 0.12)'
-      };
-    },
     
     themePreviewStyle() {
       return {
@@ -218,32 +196,6 @@ export default {
   z-index: 2;
 }
 
-/* 头部样式 */
-.header {
-  padding: 16px 20px 8px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-}
-
-.logo-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-}
-
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-}
 
 /* 内容区域 */
 .content {

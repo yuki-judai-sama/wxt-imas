@@ -30,7 +30,7 @@
     </el-menu>
     
     <!-- 时间显示区域 - 输入框上方 -->
-    <div class="time-container">
+    <div v-if="showTimeDisplay" class="time-container">
       <div class="time-display">
         <div class="time-main">{{ currentTime.time }}</div>
         <div class="time-date">{{ currentTime.date }}</div>
@@ -38,7 +38,10 @@
     </div>
     
     <!-- 搜索输入框 -->
-    <div class="search-container">
+    <div v-if="showSearchBox" class="search-container" :class="{ 
+      'no-time-display': !showTimeDisplay,
+      [`search-${searchBoxSize}`]: true 
+    }">
       <div class="search-wrapper" :class="{ 'focused': searchFocused }">
         <div class="search-icon">
           <img
@@ -312,6 +315,11 @@ export default {
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
       hasUnreadTweets: false, // 是否有未读推文
       
+      // 界面显示控制
+      showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
+      showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
+      searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE,
+      
       // 工具栏相关
       toolbarDialogVisible: false,
       toolbarItems: [
@@ -344,6 +352,20 @@ export default {
     convertLinks,
     getImageUrl,
     isCardImgUrl,
+    
+    // 解析布尔设置
+    parseBooleanSetting(value, defaultValue) {
+      if (value === null || value === undefined) {
+        return defaultValue;
+      }
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return value === 'true';
+      }
+      return defaultValue;
+    },
     
     // 获取初始搜索引擎索引
     getInitialSearchEngineIndex() {
@@ -494,10 +516,36 @@ export default {
           this.handleSearchEngineChange(e.newValue);
         } else if (e.key === APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) {
           this.handleCustomBgChange(e.newValue);
+        } else if (e.key === APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY) {
+          this.handleTimeDisplayChange(e.newValue);
+        } else if (e.key === APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX) {
+          this.handleSearchBoxChange(e.newValue);
+        } else if (e.key === APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) {
+          this.handleSearchBoxSizeChange(e.newValue);
         }
       };
       window.addEventListener('storage', localStorageListener);
       this.settingsListener = localStorageListener;
+      
+      // 监听 Chrome 扩展消息
+      if (chrome?.runtime) {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+          if (message.type === 'SETTINGS_CHANGE') {
+            this.handleSettingsChange(message.data);
+          }
+        });
+      }
+      
+      // 监听 Chrome storage 变化
+      if (chrome?.storage) {
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+          if (namespace === 'local') {
+            if (changes.settings_change) {
+              this.handleSettingsChange(changes.settings_change.newValue);
+            }
+          }
+        });
+      }
     },
     
     // 处理自定义背景图变更
@@ -540,6 +588,47 @@ export default {
       const engineIndex = this.searchEngines.findIndex(engine => engine.name === searchEngineName);
       if (engineIndex !== -1) {
         this.searchIconIndex = engineIndex;
+      }
+    },
+    
+    // 处理时间显示变更
+    handleTimeDisplayChange(showTimeDisplay) {
+      this.showTimeDisplay = this.parseBooleanSetting(showTimeDisplay, APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY);
+      if (this.showTimeDisplay) {
+        this.startTimeUpdate();
+      } else {
+        this.stopTimeUpdate();
+      }
+    },
+    
+    // 处理搜索框变更
+    handleSearchBoxChange(showSearchBox) {
+      this.showSearchBox = this.parseBooleanSetting(showSearchBox, APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX);
+    },
+    
+    // 处理搜索框大小变更
+    handleSearchBoxSizeChange(searchBoxSize) {
+      this.searchBoxSize = searchBoxSize || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE;
+    },
+    
+    // 处理设置变更（统一入口）
+    handleSettingsChange(data) {
+      if (!data) return;
+      
+      if (data.defaultSearchEngine) {
+        this.handleSearchEngineChange(data.defaultSearchEngine);
+      }
+      if (data.customBgUrl !== undefined) {
+        this.handleCustomBgChange(data.customBgUrl);
+      }
+      if (data.showTimeDisplay !== undefined) {
+        this.handleTimeDisplayChange(data.showTimeDisplay);
+      }
+      if (data.showSearchBox !== undefined) {
+        this.handleSearchBoxChange(data.showSearchBox);
+      }
+      if (data.searchBoxSize) {
+        this.handleSearchBoxSizeChange(data.searchBoxSize);
       }
     },
     
@@ -649,8 +738,10 @@ export default {
     this.setupSettingsChangeListener();
     // 初始化自定义背景图
     this.updateCustomBackground();
-    // 启动时间更新
-    this.startTimeUpdate();
+    // 根据设置启动时间更新
+    if (this.showTimeDisplay) {
+      this.startTimeUpdate();
+    }
   },
   
   beforeUnmount() {
@@ -1277,6 +1368,55 @@ export default {
   padding: 0 20px;
 }
 
+/* 当时间显示被隐藏时，搜索框的顶部间距 */
+.search-container.no-time-display {
+  margin-top: 80px;
+}
+
+/* 搜索框大小样式 */
+.search-container.search-large .search-wrapper {
+  height: 55px;
+  max-width: 500px;
+}
+
+.search-container.search-medium .search-wrapper {
+  height: 45px;
+  max-width: 400px;
+}
+
+.search-container.search-small .search-wrapper {
+  height: 35px;
+  max-width: 300px;
+}
+
+/* 搜索框大小对应的图标和字体 */
+.search-container.search-large .search-icon img {
+  height: 20px;
+  width: 20px;
+}
+
+.search-container.search-medium .search-icon img {
+  height: 16px;
+  width: 16px;
+}
+
+.search-container.search-small .search-icon img {
+  height: 14px;
+  width: 14px;
+}
+
+.search-container.search-large .search-input {
+  font-size: 16px;
+}
+
+.search-container.search-medium .search-input {
+  font-size: 14px;
+}
+
+.search-container.search-small .search-input {
+  font-size: 12px;
+}
+
 .search-wrapper {
   position: relative;
   width: 100%;
@@ -1418,37 +1558,6 @@ export default {
   animation: gentlePulse 4s ease-in-out infinite;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .time-container {
-    margin-top: 80px;
-    margin-bottom: 15px;
-  }
-  
-  .time-main {
-    font-size: 24px;
-    letter-spacing: 0.5px;
-  }
-  
-  .time-date {
-    font-size: 11px;
-  }
-  
-  .search-container {
-    margin-top: 0;
-    padding: 0 15px;
-  }
-  
-  .search-wrapper {
-    height: 50px;
-    max-width: 100%;
-    padding: 0 20px;
-  }
-  
-  .search-input {
-    font-size: 15px;
-  }
-}
 ::v-deep(.el-avatar) {    /*全局avatar样式*/
   background-color: transparent !important;
 }
@@ -1773,62 +1882,4 @@ html, body, #app {  /*清除自带外边框*/
   animation: subtleGlow 3s ease-in-out infinite;
 }
 
-/* 响应式调整 - 仅针对小屏幕浏览器窗口 */
-@media (max-width: 900px) {
-  .toolbar-button {
-    bottom: 15px;
-    right: 15px;
-    width: 45px;
-    height: 45px;
-  }
-  
-  .toolbar-icon {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .toolbar-dialog :deep(.el-dialog) {
-    width: 90% !important;
-    margin: 0 auto;
-  }
-  
-  .toolbar-container {
-    padding: 15px;
-  }
-  
-  .toolbar-grid {
-    gap: 16px;
-  }
-  
-  .toolbar-row {
-    gap: 12px;
-  }
-  
-  .toolbar-item {
-    padding: 6px 6px;
-    min-height: 38px;
-  }
-  
-  .toolbar-icon-circle {
-    width: 44px;
-    height: 44px;
-  }
-  
-  .toolbar-icon-img {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .toolbar-title {
-    font-size: 11px;
-  }
-  
-  .toolbar-dialog :deep(.el-dialog__header) {
-    padding: 20px 24px;
-  }
-  
-  .toolbar-dialog :deep(.el-dialog__title) {
-    font-size: 20px;
-  }
-}
 </style>

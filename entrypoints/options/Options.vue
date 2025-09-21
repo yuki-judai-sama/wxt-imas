@@ -87,6 +87,31 @@
           </el-select>
         </div>
 
+        <div class="setting-item">
+          <label class="setting-label">显示时间</label>
+          <el-switch v-model="showTimeDisplay" @change="handleTimeDisplayChange" />
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">显示搜索框</label>
+          <el-switch v-model="showSearchBox" @change="handleSearchBoxChange" />
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">搜索框大小</label>
+          <el-select v-model="searchBoxSize" placeholder="选择搜索框大小" style="width: 200px" @change="handleSearchBoxSizeChange">
+            <el-option
+              v-for="size in searchBoxSizes"
+              :key="size.name"
+              :label="size.displayName"
+              :value="size.name"
+            >
+              <span style="float: left">{{ size.displayName }}</span>
+              <span style="float: right; color: #8492a6; font-size: 13px">{{ size.description }}</span>
+            </el-option>
+          </el-select>
+        </div>
+
         <!-- 自定义背景图设置 -->
         <div class="setting-item">
           <label class="setting-label">自定义背景图</label>
@@ -152,7 +177,7 @@
 </template>
 
 <script>
-import { APP_CONFIG, members, searchEngines } from '/src/utils/appConfig.js'
+import { APP_CONFIG, members, searchEngines, searchBoxSizes } from '/src/utils/appConfig.js'
 import { storage, notifyNewTab } from '/src/utils/util.js'
 import { Plus } from '@element-plus/icons-vue'
 
@@ -165,10 +190,57 @@ export default {
     return {
       selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER,
       defaultSearchEngine: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE) || APP_CONFIG.DEFAULTS.SEARCH_ENGINE,
-      customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null
+      customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
+      showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
+      showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
+      searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE
     };
   },
   methods: {
+    // 解析布尔设置
+    parseBooleanSetting(value, defaultValue) {
+      if (value === null || value === undefined) {
+        return defaultValue;
+      }
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        return value === 'true';
+      }
+      return defaultValue;
+    },
+    
+    // 处理时间显示开关变更
+    handleTimeDisplayChange(value) {
+      // 立即保存到本地存储
+      storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY, value);
+      // 立即通知新标签页
+      notifyNewTab('SETTINGS_CHANGE', { 
+        showTimeDisplay: value
+      });
+    },
+    
+    // 处理搜索框开关变更
+    handleSearchBoxChange(value) {
+      // 立即保存到本地存储
+      storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX, value);
+      // 立即通知新标签页
+      notifyNewTab('SETTINGS_CHANGE', { 
+        showSearchBox: value
+      });
+    },
+    
+    // 处理搜索框大小变更
+    handleSearchBoxSizeChange(value) {
+      // 立即保存到本地存储
+      storage.set(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE, value);
+      // 立即通知新标签页
+      notifyNewTab('SETTINGS_CHANGE', { 
+        searchBoxSize: value
+      });
+    },
+    
     // 切换成员主题
     changeMemberTheme(memberName) {
       const member = members.find(m => m.name === memberName);
@@ -206,6 +278,9 @@ export default {
         // 保存设置
         storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, this.selectedMember);
         storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE, this.defaultSearchEngine);
+        storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY, this.showTimeDisplay);
+        storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX, this.showSearchBox);
+        storage.set(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE, this.searchBoxSize);
         
         // 保存自定义背景图
         if (this.customBgUrl) {
@@ -235,6 +310,9 @@ export default {
           this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
           this.defaultSearchEngine = APP_CONFIG.DEFAULTS.SEARCH_ENGINE;
           this.customBgUrl = null;
+          this.showTimeDisplay = APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY;
+          this.showSearchBox = APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX;
+          this.searchBoxSize = APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE;
           
           storage.clear();
           this.notifyNewTabSettingsChange();
@@ -252,7 +330,10 @@ export default {
     notifyNewTabSettingsChange() {
       notifyNewTab('SETTINGS_CHANGE', { 
         defaultSearchEngine: this.defaultSearchEngine,
-        customBgUrl: this.customBgUrl
+        customBgUrl: this.customBgUrl,
+        showTimeDisplay: this.showTimeDisplay,
+        showSearchBox: this.showSearchBox,
+        searchBoxSize: this.searchBoxSize
       });
     },
     
@@ -417,6 +498,11 @@ export default {
     // 搜索引擎列表
     searchEngines() {
       return searchEngines;
+    },
+    
+    // 搜索框大小列表
+    searchBoxSizes() {
+      return searchBoxSizes;
     },
     
     // 当前成员主题样式
@@ -862,28 +948,4 @@ export default {
   border-radius: 8px;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .content {
-    padding: 20px;
-  }
-  
-  .header {
-    padding: 16px 20px;
-  }
-  
-  .footer {
-    padding: 16px 20px;
-  }
-  
-  .member-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .setting-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-}
 </style>

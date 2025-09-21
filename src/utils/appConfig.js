@@ -13,7 +13,10 @@ export const APP_CONFIG = {
   STORAGE_KEYS: {
     DEFAULT_MEMBER: 'defaultMember',
     DEFAULT_SEARCH_ENGINE: 'defaultSearchEngine',
-    CUSTOM_BG_URL: 'customBgUrl'
+    CUSTOM_BG_URL: 'customBgUrl',
+    SHOW_TIME_DISPLAY: 'showTimeDisplay',
+    SHOW_SEARCH_BOX: 'showSearchBox',
+    SEARCH_BOX_SIZE: 'searchBoxSize'
   },
   
   // 文件上传限制
@@ -30,7 +33,10 @@ export const APP_CONFIG = {
   // 默认值
   DEFAULTS: {
     MEMBER: 'TsukimuraTemari',
-    SEARCH_ENGINE: 'google'
+    SEARCH_ENGINE: 'google',
+    SHOW_TIME_DISPLAY: true,
+    SHOW_SEARCH_BOX: true,
+    SEARCH_BOX_SIZE: 'small'
   }
 };
 
@@ -57,4 +63,11 @@ export const searchEngines = [
   { name: 'baidu', displayName: '百度', urlTemplate: 'https://www.baidu.com/s?wd=%keyword%' },
   { name: 'bilibili', displayName: '哔哩哔哩', urlTemplate: 'https://search.bilibili.com/all?keyword=%keyword%' },
   { name: 'biying', displayName: '必应', urlTemplate: 'https://www.bing.com/search?q=%keyword%' }
+];
+
+// 搜索框大小配置
+export const searchBoxSizes = [
+  { name: 'large', displayName: '大', description: '大号搜索框' },
+  { name: 'medium', displayName: '中', description: '中号搜索框' },
+  { name: 'small', displayName: '小', description: '小号搜索框' }
 ];

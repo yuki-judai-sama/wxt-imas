@@ -456,34 +456,6 @@ export default {
   padding: 16px;
 }
 
-/* 响应式调整 */
-@media (max-width: 400px) {
-  .popup-container {
-    width: 320px;
-    min-height: 550px;
-  }
-  
-  .content {
-    padding: 16px;
-  }
-  
-  .theme-preview {
-    height: 70px;
-  }
-  
-  .theme-name {
-    font-size: 16px;
-  }
-  
-  .member-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .main-action-btn {
-    height: 40px;
-    font-size: 14px;
-  }
-}
 
 /* 解决Edge浏览器插件弹窗背景黑色问题 */
 :global(html, body) {

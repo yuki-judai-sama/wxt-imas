@@ -4,7 +4,7 @@
     <div class="header" :style="headerStyle">
       <div class="logo-section">
         <img 
-          src="/icon/学マス-logo.png" 
+          src="/utils/学マス-logo.png" 
           alt="学マス" 
           class="logo"
           draggable="false"

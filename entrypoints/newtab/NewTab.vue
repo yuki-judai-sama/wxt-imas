@@ -6,7 +6,7 @@
       <el-menu-item index="logo" @click="openMemberLink(0)">
         <img
             style="max-height: 100%; height: auto; width: auto;"
-            src="/icon/学マス-title.png"
+            src="/utils/学マス-title.png"
             draggable="false"
         />
       </el-menu-item>
@@ -42,7 +42,7 @@
       <div class="search-wrapper" :class="{ 'focused': searchFocused }">
         <div class="search-icon">
           <img
-              :src="`/icon/${searchEngines[searchIconIndex].name}.png`"
+              :src="`/utils/${searchEngines[searchIconIndex].name}.png`"
               :style="{ height: '20px', width: '20px' }"
               draggable="false"
           />
@@ -218,6 +218,63 @@
       </div>
     </el-drawer>
     
+    <!-- 工具箱按钮 -->
+    <div class="toolbar-button" @click="toolbarDialogVisible = true">
+      <img src="/utils/ToolList.png" alt="工具箱" class="toolbar-icon" draggable="false" />
+    </div>
+    
+    <!-- 自定义工具栏模态框 -->
+    <div v-if="toolbarDialogVisible" class="toolbar-modal" @click="closeToolbar">
+      <div class="toolbar-modal-content" :style="toolbarBackgroundStyle" @click.stop>
+        <!-- 头部 -->
+        <div class="toolbar-header">
+          <h2 class="toolbar-title-header">工具箱</h2>
+          <button class="toolbar-close-btn" @click="closeToolbar">×</button>
+        </div>
+        
+        <!-- 主体内容 -->
+        <div class="toolbar-body">
+          <div class="toolbar-grid">
+            <!-- 第一行 -->
+            <div class="toolbar-row">
+              <div class="toolbar-item" v-for="item in toolbarItems.slice(0, 5)" :key="item.id" @click="handleToolbarClick(item)">
+                <div class="toolbar-icon-wrapper">
+                  <div class="toolbar-icon-circle">
+                    <img :src="item.icon" :alt="item.title" class="toolbar-icon-img" draggable="false" />
+                  </div>
+                </div>
+                <div class="toolbar-title">{{ item.title }}</div>
+              </div>
+            </div>
+            
+            <!-- 第二行 -->
+            <div class="toolbar-row">
+              <div class="toolbar-item" v-for="item in toolbarItems.slice(5, 10)" :key="item.id" @click="handleToolbarClick(item)">
+                <div class="toolbar-icon-wrapper">
+                  <div class="toolbar-icon-circle">
+                    <img :src="item.icon" :alt="item.title" class="toolbar-icon-img" draggable="false" />
+                  </div>
+                </div>
+                <div class="toolbar-title">{{ item.title }}</div>
+              </div>
+            </div>
+            
+            <!-- 第三行 -->
+            <div class="toolbar-row">
+              <div class="toolbar-item" v-for="item in toolbarItems.slice(10, 15)" :key="item.id" @click="handleToolbarClick(item)">
+                <div class="toolbar-icon-wrapper">
+                  <div class="toolbar-icon-circle">
+                    <img :src="item.icon" :alt="item.title" class="toolbar-icon-img" draggable="false" />
+                  </div>
+                </div>
+                <div class="toolbar-title">{{ item.title }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
   </div>
 </template>
 <!--*****************************************************************************************************************-->
@@ -253,7 +310,27 @@ export default {
       imageLoadErrors: {},
       settingsListener: null,
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
-      hasUnreadTweets: false // 是否有未读推文
+      hasUnreadTweets: false, // 是否有未读推文
+      
+      // 工具栏相关
+      toolbarDialogVisible: false,
+      toolbarItems: [
+        { id: 1, title: '书签', icon: '/utils/collect.png' },
+        { id: 2, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 3, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 4, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 5, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 6, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 7, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 8, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 9, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 10, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 11, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 12, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 13, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 14, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 15, title: '機能追加予定', icon: '/utils/pending.png' }
+      ]
     };
   },
   methods: {
@@ -538,11 +615,30 @@ export default {
         storage.set('lastReadTweetId', firstTweetId);
         this.hasUnreadTweets = false;
       }
+    },
+    
+    // 处理工具栏点击
+    handleToolbarClick(item) {
+      console.log(`点击了功能: ${item.title}`);
+      // TODO: 实现具体功能
+    },
+    
+    // 关闭工具栏
+    closeToolbar() {
+      this.toolbarDialogVisible = false;
+    },
+    
+    // 键盘事件处理（工具栏专用）
+    handleToolbarKeydown(e) {
+      if (e.key === 'Escape' && this.toolbarDialogVisible) {
+        this.closeToolbar();
+      }
     }
   },
   mounted() {
     // 监听键盘事件
     window.addEventListener("keydown", this.keyDown);
+    window.addEventListener("keydown", this.handleToolbarKeydown);
     // 监听点击事件，清除导航栏聚焦状态
     document.addEventListener("click", this.handleDocumentClick);
     // 获取推文数据
@@ -560,6 +656,7 @@ export default {
   beforeUnmount() {
     // 清理事件监听器
     window.removeEventListener("keydown", this.keyDown);
+    window.removeEventListener("keydown", this.handleToolbarKeydown);
     document.removeEventListener("click", this.handleDocumentClick);
     if (this.localStorageListener) {
       window.removeEventListener('storage', this.localStorageListener);
@@ -628,6 +725,19 @@ export default {
         backdropFilter: 'blur(20px)',
         borderBottom: `1px solid rgba(${r}, ${g}, ${b}, 0.2)`,
         boxShadow: `0 2px 20px rgba(${r}, ${g}, ${b}, 0.1)`
+      };
+    },
+    
+    // 工具栏背景样式
+    toolbarBackgroundStyle() {
+      const member = this.members[this.selectMemberThemeIndex];
+      const bgImage = `/idol/${member.name}.png`;
+      
+      return {
+        backgroundImage: `url('${bgImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
       };
     }
   }
@@ -1393,5 +1503,332 @@ html, body, #app {  /*清除自带外边框*/
 
 .mainStyle.has-custom-bg {
   background-image: none !important;
+}
+
+/* 工具箱按钮样式 */
+.toolbar-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.toolbar-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 1);
+}
+
+.toolbar-icon {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* 自定义工具栏模态框样式 */
+.toolbar-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.toolbar-modal-content {
+  width: 75vw;
+  height: 80vh;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 添加遮罩层增强毛玻璃效果 */
+.toolbar-modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  border-radius: 16px;
+}
+
+
+.toolbar-header {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  z-index: 2;
+}
+
+.toolbar-title-header {
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+.toolbar-close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.toolbar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.toolbar-body {
+  flex: 1;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px) saturate(1.5);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+/* 工具栏网格布局 */
+.toolbar-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.toolbar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1.5;
+  min-height: 45px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.toolbar-item:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(22px) saturate(1.8);
+  -webkit-backdrop-filter: blur(22px) saturate(1.8);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.toolbar-icon-wrapper {
+  margin-bottom: 4px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  z-index: 2;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.toolbar-item:hover .toolbar-icon-circle {
+  background: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(15px) saturate(1.5);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  border-color: rgba(255, 255, 255, 1);
+  transform: scale(1.05);
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.toolbar-icon-img {
+  width: 28px;
+  height: 28px;
+  filter: none;
+  transition: all 0.3s ease;
+}
+
+.toolbar-item:hover .toolbar-icon-img {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.toolbar-title {
+  font-size: 13px;
+  color: #fff;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.toolbar-item:hover .toolbar-title {
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* 微妙的发光动画 */
+@keyframes subtleGlow {
+  0%, 100% {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.15),
+      0 0 8px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+.toolbar-item:not(:hover) {
+  animation: subtleGlow 3s ease-in-out infinite;
+}
+
+/* 响应式调整 - 仅针对小屏幕浏览器窗口 */
+@media (max-width: 900px) {
+  .toolbar-button {
+    bottom: 15px;
+    right: 15px;
+    width: 45px;
+    height: 45px;
+  }
+  
+  .toolbar-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .toolbar-dialog :deep(.el-dialog) {
+    width: 90% !important;
+    margin: 0 auto;
+  }
+  
+  .toolbar-container {
+    padding: 15px;
+  }
+  
+  .toolbar-grid {
+    gap: 16px;
+  }
+  
+  .toolbar-row {
+    gap: 12px;
+  }
+  
+  .toolbar-item {
+    padding: 6px 6px;
+    min-height: 38px;
+  }
+  
+  .toolbar-icon-circle {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .toolbar-icon-img {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .toolbar-title {
+    font-size: 11px;
+  }
+  
+  .toolbar-dialog :deep(.el-dialog__header) {
+    padding: 20px 24px;
+  }
+  
+  .toolbar-dialog :deep(.el-dialog__title) {
+    font-size: 20px;
+  }
 }
 </style>

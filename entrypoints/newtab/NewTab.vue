@@ -159,7 +159,7 @@
             <div v-for="(img, i) in tweet.media" :key="i" class="tweet-image-container">
               <img
                   v-if="!imageLoadErrors[`${tweet.id}-${i}`]"
-                  :src="getImageUrl(img)"
+              :src="getImageUrl(img)"
                   :alt="`图片 ${i + 1}`"
                   loading="lazy"
                   class="tweet-image"
@@ -172,14 +172,14 @@
 
           <!-- 推文操作 -->
           <div class="tweet-actions">
-            <a
-                :href="`https://x.com/${tweet.member}/status/${tweet.id}`"
-                target="_blank"
-                rel="noopener noreferrer"
+          <a
+              :href="`https://x.com/${tweet.member}/status/${tweet.id}`"
+              target="_blank"
+              rel="noopener noreferrer"
                 class="tweet-link"
-            >
-              打开推文
-            </a>
+          >
+            打开推文
+          </a>
             <span v-if="tweet.source_user && tweet.source_user !== tweet.member"
                   class="tweet-original">
               原始推文
@@ -369,6 +369,57 @@
       </div>
     </div>
     
+    <!-- Live信息模态框 -->
+    <div v-if="liveDialogVisible" class="live-modal" @click="closeLiveDialog">
+      <div class="live-modal-content" :style="liveBackgroundStyle" @click.stop>
+        <!-- 头部 -->
+        <div class="live-header">
+          <button class="live-back-btn" @click="goBackToToolbarFromLive" title="回到工具箱">
+            <img src="/utils/back.png" alt="返回" class="back-icon" draggable="false" />
+          </button>
+          <h2 class="live-title-header">イベント·ライブ</h2>
+          <button class="live-close-btn" @click="closeLiveDialog">×</button>
+        </div>
+        
+        <!-- 主体内容 -->
+        <div class="live-body">
+          <!-- 空状态提示 -->
+          <div v-if="liveInfoList.length === 0" class="live-empty-state">
+            <div class="live-empty-icon">🎤</div>
+            <div class="live-empty-text">暂无Live信息</div>
+          </div>
+          
+          <!-- Live信息网格 -->
+          <div v-else class="live-grid">
+            <div 
+              v-for="(live, index) in liveInfoList" 
+              :key="index" 
+              class="live-item"
+            >
+              <!-- Live图片 -->
+              <div class="live-image-container">
+                <img 
+                  :src="live.imageUrl" 
+                  :alt="live.title" 
+                  class="live-image"
+                  draggable="false"
+                  @error="handleLiveImageError"
+                />
+              </div>
+              
+              <!-- Live信息 -->
+              <div class="live-info">
+                <div class="live-title">{{ live.title }}</div>
+                <div class="live-tag" :class="getLiveTagClass(live.tag)">
+                  {{ live.tag || '受付は終了しました' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!-- 底部横向书签栏 -->
     <div v-if="showBottomBookmarkBar" class="bottom-bookmark-bar" @wheel="handleBookmarkBarScroll">
       <div class="bookmark-bar-container">
@@ -444,6 +495,9 @@ export default {
       // 书签管理相关
       bookmarkDialogVisible: false,
       bookmarks: [], // 存储用户的书签
+      // Live信息相关
+      liveDialogVisible: false,
+      liveInfoList: [], // 存储Live信息
       // 新增书签表单相关
       addBookmarkDialogVisible: false,
       newBookmark: {
@@ -454,7 +508,7 @@ export default {
       urlInputTimer: null, // URL输入防抖定时器
       toolbarItems: [
         { id: 1, title: '书签', icon: '/utils/collect.png' },
-        { id: 2, title: '機能追加予定', icon: '/utils/pending.png' },
+        { id: 2, title: 'イベント·ライブ', icon: '/utils/Live.png' },
         { id: 3, title: '機能追加予定', icon: '/utils/pending.png' },
         { id: 4, title: '機能追加予定', icon: '/utils/pending.png' },
         { id: 5, title: '機能追加予定', icon: '/utils/pending.png' },
@@ -586,6 +640,20 @@ export default {
       }).catch(err => {
         console.error('获取推文数据失败:', err);
       });
+    },
+    
+    // 获取Live信息数据
+    async getLiveInfoList() {
+      try {
+        const response = await $axios.post('/AsobiTicketBootsController/getLiveInfoList');
+        if (response.data.success && response.data.data) {
+          this.liveInfoList = response.data.data;
+        }
+        return response.data;
+      } catch (error) {
+        console.error('获取Live信息失败:', error);
+        return null;
+      }
     },
     
     // 按成员筛选推文
@@ -852,6 +920,10 @@ export default {
         // 点击书签，打开书签管理页面
         this.toolbarDialogVisible = false;
         this.bookmarkDialogVisible = true;
+      } else if (item.id === 2 && item.title === 'イベント·ライブ') {
+        // 点击Live，打开Live信息页面
+        this.toolbarDialogVisible = false;
+        this.liveDialogVisible = true;
       } else {
         // TODO: 实现其他功能
       }
@@ -867,9 +939,20 @@ export default {
       this.bookmarkDialogVisible = false;
     },
     
+    // 关闭Live信息页面
+    closeLiveDialog() {
+      this.liveDialogVisible = false;
+    },
+    
     // 回到工具箱
     goBackToToolbar() {
       this.bookmarkDialogVisible = false;
+      this.toolbarDialogVisible = true;
+    },
+    
+    // 回到工具箱（从Live页面）
+    goBackToToolbarFromLive() {
+      this.liveDialogVisible = false;
       this.toolbarDialogVisible = true;
     },
     
@@ -1074,6 +1157,8 @@ export default {
           this.closeBookmarkDialog();
         } else if (this.addBookmarkDialogVisible) {
           this.closeAddBookmarkDialog();
+        } else if (this.liveDialogVisible) {
+          this.closeLiveDialog();
         }
       }
     },
@@ -1097,6 +1182,20 @@ export default {
     // 打开书签链接
     openBookmarkUrl(url) {
       window.open(url, '_blank');
+    },
+    
+    // 处理Live图片加载错误
+    handleLiveImageError(event) {
+      event.target.src = '/utils/Live.png';
+    },
+    
+    // 获取Live标签的CSS类
+    getLiveTagClass(tag) {
+      if (tag === '受付は終了しました') {
+        return 'live-tag-ended';
+      }
+      // 其他所有情况都是蓝色
+      return 'live-tag-active';
     }
   },
   mounted() {
@@ -1107,6 +1206,8 @@ export default {
     document.addEventListener("click", this.handleDocumentClick);
     // 获取推文数据
     this.getTwitterContent();
+      // 获取Live信息数据
+      this.getLiveInfoList();
     // 监听主题变更
     this.setupThemeChangeListener();
     // 监听设置变更
@@ -1215,6 +1316,19 @@ export default {
     
     // 书签背景样式
     bookmarkBackgroundStyle() {
+      const member = this.members[this.selectMemberThemeIndex];
+      const bgImage = `/idol/${member.name}.png`;
+      
+      return {
+        backgroundImage: `url('${bgImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      };
+    },
+    
+    // Live背景样式
+    liveBackgroundStyle() {
       const member = this.members[this.selectMemberThemeIndex];
       const bgImage = `/idol/${member.name}.png`;
       
@@ -2605,6 +2719,262 @@ html, body, #app {  /*清除自带外边框*/
   animation: subtleGlow 3s ease-in-out infinite;
 }
 
+/* Live信息模态框样式 */
+.live-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.live-modal-content {
+  width: 80vw;
+  height: 85vh;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 添加遮罩层增强毛玻璃效果 */
+.live-modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+  border-radius: 16px;
+}
+
+.live-header {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  z-index: 2;
+}
+
+.live-back-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-right: 12px;
+  z-index: 10;
+  position: relative;
+}
+
+.live-back-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.live-title-header {
+  color: #fff;
+  font-weight: 600;
+  font-size: 18px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.live-close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.live-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.live-body {
+  flex: 1;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px) saturate(1.5);
+  -webkit-backdrop-filter: blur(15px) saturate(1.5);
+  overflow-y: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Live信息网格布局 */
+.live-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  padding: 20px 0;
+  box-sizing: border-box;
+}
+
+.live-item {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.live-item:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.live-image-container {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.live-item:hover .live-image {
+  transform: scale(1.05);
+}
+
+.live-info {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.live-title {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-tag {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-align: center;
+  align-self: flex-start;
+  transition: all 0.3s ease;
+}
+
+.live-tag-active {
+  background: rgba(147, 197, 253, 0.3);
+  color: #3b82f6;
+  border: 1px solid rgba(147, 197, 253, 0.5);
+}
+
+.live-tag-ended {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.live-tag-default {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+/* 空状态样式 */
+.live-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.live-empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.live-empty-text {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Live项的微妙发光动画 */
+.live-item:not(:hover) {
+  animation: subtleGlow 3s ease-in-out infinite;
+}
+
 /* 新增书签表单模态框样式 */
 .add-bookmark-modal {
   position: fixed;
@@ -2652,7 +3022,7 @@ html, body, #app {  /*清除自带外边框*/
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 20px 24px;
+    padding: 20px 24px;
   display: flex;
   align-items: center;
   border-radius: 16px 16px 0 0;

@@ -6,6 +6,7 @@ export const APP_CONFIG = {
   // API配置
   API_BASE_URL: 'http://127.0.0.1:8115',
   TWITTER_API_ENDPOINT: '/TwitterController/getTwitterContent',
+  ASOBI_TICKET_BOOTS: '/AsobiTicketController/getLiveInfoList',
   // 存储键名
   STORAGE_KEYS: {
     DEFAULT_MEMBER: 'defaultMember',

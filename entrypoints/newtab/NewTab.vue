@@ -646,7 +646,7 @@ export default {
     // 获取Live信息数据
     async getLiveInfoList() {
       try {
-        const response = await $axios.post('/AsobiTicketBootsController/getLiveInfoList');
+        const response = await $axios.post(APP_CONFIG.ASOBI_TICKET_BOOTS);
         if (response.data.success && response.data.data) {
           this.liveInfoList = response.data.data;
         }

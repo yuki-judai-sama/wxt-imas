@@ -4,7 +4,7 @@
     <div class="header" :style="headerStyle">
       <div class="logo-section">
         <img 
-          src="/utils/学マス-logo.png" 
+          :src="`/${IMAGE_URL}${LOGO}`" 
           alt="学マス" 
           class="logo"
           draggable="false"
@@ -30,7 +30,7 @@
             <div class="theme-overlay">
               <div class="content-wrapper">
                 <img 
-                  :src="`/idol/headImg/${selectedMember}.png`" 
+                  :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${selectedMember}.png`" 
                   class="theme-avatar"
                   draggable="false"
                 />
@@ -54,7 +54,7 @@
             >
               <div class="member-content">
                 <img 
-                  :src="`/idol/headImg/${member.name}.png`" 
+                  :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`" 
                   class="member-avatar"
                   draggable="false"
                 />
@@ -169,7 +169,7 @@
         </template>
         
         <div class="about-content">
-          <p><strong>插件名称：</strong>{{ APP_CONFIG.APP_NAME }}</p>
+          <p><strong>插件名称：</strong>{{ APP_NAME }}</p>
           <p><strong>版本：</strong>{{ APP_CONFIG.VERSION }}</p>
             <p>如有问题反馈或功能建议，欢迎发送邮件至：<a :href="`mailto:${APP_CONFIG.CONTACT_EMAIL}`" style="color: #409EFF; text-decoration: none;">{{ APP_CONFIG.CONTACT_EMAIL }}</a></p>
         </div>
@@ -188,7 +188,8 @@
 </template>
 
 <script>
-import { APP_CONFIG, members, searchEngines, searchBoxSizes } from '/src/utils/appConfig.js'
+import { APP_CONFIG, searchEngines, searchBoxSizes } from '/src/utils/appConfig.js'
+import { members, DEFAULT_MEMBERS, APP_NAME, IMAGE_URL, HEAD_IMAGE_PREFIX, LOGO } from '/src/utils/gakumasuConfig.js'
 import { storage, notifyNewTab } from '/src/utils/util.js'
 import { Plus} from '@element-plus/icons-vue'
 
@@ -199,7 +200,7 @@ export default {
   },
   data() {
     return {
-      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER,
+      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || DEFAULT_MEMBERS,
       defaultSearchEngine: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE) || APP_CONFIG.DEFAULTS.SEARCH_ENGINE,
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
       showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
@@ -330,7 +331,7 @@ export default {
         type: 'warning'
       }).then(() => {
         try {
-          this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
+          this.selectedMember = DEFAULT_MEMBERS;
           this.defaultSearchEngine = APP_CONFIG.DEFAULTS.SEARCH_ENGINE;
           this.customBgUrl = null;
           this.showTimeDisplay = APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY;
@@ -498,8 +499,8 @@ export default {
   mounted() {
     // 确保选中的成员在列表中
     if (!members.find(m => m.name === this.selectedMember)) {
-      this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
-      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, APP_CONFIG.DEFAULTS.MEMBER);
+      this.selectedMember = DEFAULT_MEMBERS;
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, DEFAULT_MEMBERS);
     }
     
     // 验证默认搜索引擎
@@ -510,9 +511,22 @@ export default {
     }
   },
   computed: {
+    IMAGE_URL() {
+      return IMAGE_URL;
+    },
+    HEAD_IMAGE_PREFIX() {
+      return HEAD_IMAGE_PREFIX;
+    },
+    LOGO() {
+      return LOGO;
+    },
     // 应用配置
     APP_CONFIG() {
       return APP_CONFIG;
+    },
+    // 应用名称（从新配置）
+    APP_NAME() {
+      return APP_NAME || APP_CONFIG.APP_NAME;
     },
     
     // 成员列表
@@ -542,7 +556,7 @@ export default {
       
       return {
         color: `rgb(${r}, ${g}, ${b})`,
-        bgImage: `/idol/${member.name}.png`
+        bgImage: `/${IMAGE_URL}${member.name}.png`
       };
     },
     

@@ -10,7 +10,7 @@
           <div class="theme-overlay">
             <div class="content-wrapper">
               <img 
-                :src="`/idol/headImg/${selectedMember}.png`" 
+                :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${selectedMember}.png`" 
                 class="theme-avatar"
                 style="width: 50px; height: 50px; border-radius: 50%;"
                 draggable="false"
@@ -34,8 +34,8 @@
              :title="`切换到 ${member.memberName} 主题`"
            >
              <div class="member-content">
-               <img 
-                 :src="`/idol/headImg/${member.name}.png`" 
+              <img 
+                :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`" 
                  class="member-avatar"
                  style="width: 24px; height: 24px; border-radius: 50%;"
                  draggable="false"
@@ -72,14 +72,15 @@
 </template>
 
 <script>
-import { APP_CONFIG, members } from '/src/utils/appConfig.js'
+import { APP_CONFIG } from '/src/utils/appConfig.js'
+import { members, DEFAULT_MEMBERS, IMAGE_URL, HEAD_IMAGE_PREFIX } from '/src/utils/gakumasuConfig.js'
 import { hexToRgb, toRgba, getMemberDisplayName, storage, notifyNewTab } from '/src/utils/util.js'
 
 export default {
   name: "PopPlugin",
   data() {
     return {
-      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER
+      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || DEFAULT_MEMBERS
     };
   },
   methods: {
@@ -125,10 +126,16 @@ export default {
   mounted() {
     // 确保选中的成员在列表中
     if (!members.find(m => m.name === this.selectedMember)) {
-      this.selectedMember = APP_CONFIG.DEFAULTS.MEMBER;
+      this.selectedMember = DEFAULT_MEMBERS;
     }
   },
   computed: {
+    IMAGE_URL() {
+      return IMAGE_URL;
+    },
+    HEAD_IMAGE_PREFIX() {
+      return HEAD_IMAGE_PREFIX;
+    },
     members() {
       return members;
     },
@@ -140,7 +147,7 @@ export default {
       const { r, g, b } = this.hexToRgb(member.color);
       return {
         color: `rgb(${r}, ${g}, ${b})`,
-        bgImage: `/idol/${member.name}.png`
+        bgImage: `/${IMAGE_URL}${member.name}.png`
       };
     },
     

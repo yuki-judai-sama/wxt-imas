@@ -1,4 +1,4 @@
-import { APP_CONFIG, members } from '/src/utils/appConfig.js';
+import { members } from '/src/utils/gakumasuConfig.js';
 
 // 通用 UI/数据工具函数
 

@@ -6,7 +6,7 @@
       <el-menu-item index="logo" @click="openMemberLink(0)">
         <img
             style="max-height: 100%; height: auto; width: auto;"
-            src="/utils/学マス-title.png"
+            :src="`/${IMAGE_URL}${TITLE}`"
             draggable="false"
         />
       </el-menu-item>
@@ -17,7 +17,7 @@
           :index="String(index + 1)"
           @click="openMemberLink(index + 1)"
       >
-        <el-avatar :src="`/idol/headImg/${member.name}.png`" @dragstart.prevent/>
+        <el-avatar :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`" @dragstart.prevent/>
       </el-menu-item>
       <!-- 成员动态按钮 -->
       <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="openMemberDrawer">
@@ -93,7 +93,7 @@
               :title="selectedFilterMember === member.name ? '点击显示全部推文' : `点击只显示 @${member.memberName} 的推文`"
           >
             <el-avatar
-                :src="`/idol/headImg/${member.name}.png`"
+                :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`"
                 class="member-avatar"
                 :style="{ width: '38px', height: '38px' }"
                 @dragstart.prevent
@@ -122,7 +122,7 @@
           <!-- 推文头部 -->
           <div class="tweet-header">
           <el-avatar
-              :src="`/idol/headImg/${getAvatarName(tweet.member)}.png`"
+              :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${getAvatarName(tweet.member)}.png`"
               draggable="false"
               @dragstart.prevent
                 class="tweet-avatar"
@@ -206,7 +206,7 @@
     
     <!-- 工具箱按钮 -->
     <div class="toolbar-button" @click="toolbarDialogVisible = true">
-      <img src="/utils/ToolList.png" alt="工具箱" class="toolbar-icon" draggable="false" />
+      <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'ToolList.png'" alt="工具箱" class="toolbar-icon" draggable="false" />
     </div>
     
     <!-- 自定义工具栏模态框 -->
@@ -267,7 +267,7 @@
         <!-- 头部 -->
         <div class="bookmark-header">
           <button class="bookmark-back-btn" @click="goBackToToolbar" title="回到工具箱">
-            <img src="/utils/back.png" alt="返回" class="back-icon" draggable="false" />
+            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
           </button>
           <h2 class="bookmark-title-header">书签管理</h2>
           <button class="bookmark-close-btn" @click="closeBookmarkDialog">×</button>
@@ -290,7 +290,7 @@
                 @click.stop="deleteBookmark(item.id.split('-')[1])"
                 title="删除书签"
               >
-                <img src="/utils/delete.png" alt="删除" class="delete-icon" draggable="false" />
+                <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'delete.png'" alt="删除" class="delete-icon" draggable="false" />
               </div>
               
               <div class="bookmark-icon-wrapper">
@@ -317,7 +317,7 @@
         <!-- 头部 -->
         <div class="add-bookmark-header">
           <button class="add-bookmark-back-btn" @click="closeAddBookmarkDialog" title="返回书签管理">
-            <img src="/utils/back.png" alt="返回" class="back-icon" draggable="false" />
+            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
           </button>
           <h2 class="add-bookmark-title-header">新增书签</h2>
         </div>
@@ -375,7 +375,7 @@
         <!-- 头部 -->
         <div class="live-header">
           <button class="live-back-btn" @click="goBackToToolbarFromLive" title="回到工具箱">
-            <img src="/utils/back.png" alt="返回" class="back-icon" draggable="false" />
+            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
           </button>
           <h2 class="live-title-header">イベント·ライブ</h2>
           <button class="live-close-btn" @click="closeLiveDialog">×</button>
@@ -452,7 +452,8 @@
 <!--*****************************************************************************************************************-->
 <script>
 import $axios from '/src/utils/$axios.js'
-import { APP_CONFIG, members, searchEngines } from '/src/utils/appConfig.js'
+import { APP_CONFIG, searchEngines } from '/src/utils/appConfig.js'
+import { members, DEFAULT_MEMBERS, IMAGE_URL, HEAD_IMAGE_PREFIX, TITLE } from '/src/utils/gakumasuConfig.js'
 import { 
   hexToRgb, toRgba, getMemberByName, getMemberByTwitter, getMemberDisplayName,
   formatDate, convertLinks, getImageUrl, isCardImgUrl, storage, notifyNewTab
@@ -463,7 +464,7 @@ export default {
   data() {
     return {
       // 主题相关
-      selectMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || APP_CONFIG.DEFAULTS.MEMBER,
+      selectMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || DEFAULT_MEMBERS,
       
       // 搜索相关
       searchValue: null,
@@ -503,25 +504,25 @@ export default {
       newBookmark: {
         url: '',
         title: '',
-        icon: '/utils/collect.png' // 默认图标
+        icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png' // 默认图标
       },
       urlInputTimer: null, // URL输入防抖定时器
       toolbarItems: [
-        { id: 1, title: '书签', icon: '/utils/collect.png' },
-        { id: 2, title: 'イベント·ライブ', icon: '/utils/Live.png' },
-        { id: 3, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 4, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 5, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 6, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 7, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 8, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 9, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 10, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 11, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 12, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 13, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 14, title: '機能追加予定', icon: '/utils/pending.png' },
-        { id: 15, title: '機能追加予定', icon: '/utils/pending.png' }
+        { id: 1, title: '书签', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png' },
+        { id: 2, title: 'イベント·ライブ', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png' },
+        { id: 3, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 4, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 5, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 6, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 7, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 8, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 9, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 10, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 11, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 12, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 13, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 14, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 15, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' }
       ]
     };
   },
@@ -1047,7 +1048,7 @@ export default {
         
         // 简单的域名格式验证
         if (!this.isValidDomain(domain)) {
-          return '/utils/collect.png';
+          return APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
         }
         
         // 使用Google Favicon API
@@ -1057,7 +1058,7 @@ export default {
         
       } catch (error) {
         console.error('获取网站图标失败:', error);
-        return '/utils/collect.png';
+        return APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
       }
     },
     
@@ -1091,15 +1092,15 @@ export default {
                     bookmark.icon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
                   } else {
                     // 如果URL无效，使用本地图标
-                    bookmark.icon = '/utils/collect.png';
+                    bookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
                   }
                 } else {
                   // 如果没有URL，使用本地图标
-                  bookmark.icon = '/utils/collect.png';
+                  bookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
                 }
               } catch (error) {
                 // URL解析失败，使用本地图标
-                bookmark.icon = '/utils/collect.png';
+                bookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
               }
               return bookmark;
             });
@@ -1114,7 +1115,7 @@ export default {
     // 处理图标加载错误
     handleIconError(event) {
       // 当图标加载失败时，自动切换到本地图标
-      event.target.src = '/utils/collect.png';
+      event.target.src = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
     },
     
     // 处理URL输入（防抖处理）
@@ -1133,7 +1134,7 @@ export default {
         } catch (error) {
           console.error('获取网站图标失败:', error);
           // 出错时使用本地图标
-          this.newBookmark.icon = '/utils/collect.png';
+          this.newBookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
         }
         }
       }, 500);
@@ -1186,7 +1187,7 @@ export default {
     
     // 处理Live图片加载错误
     handleLiveImageError(event) {
-      event.target.src = '/utils/Live.png';
+      event.target.src = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png';
     },
     
     // 获取Live标签的CSS类
@@ -1241,6 +1242,19 @@ export default {
     this.stopTimeUpdate();
   },
   computed: {
+    IMAGE_URL() {
+      return IMAGE_URL;
+    },
+    HEAD_IMAGE_PREFIX() {
+      return HEAD_IMAGE_PREFIX;
+    },
+    TITLE() {
+      return TITLE;
+    },
+    // 暴露 APP_CONFIG 到模板
+    APP_CONFIG() {
+      return APP_CONFIG;
+    },
     // 成员列表
     members() {
       return members;
@@ -1258,7 +1272,7 @@ export default {
     
     // 主容器样式
     mainStyle() {
-      const bgImage = `/idol/${this.members[this.selectMemberThemeIndex].name}.png`;
+      const bgImage = `/${IMAGE_URL}${this.members[this.selectMemberThemeIndex].name}.png`;
       return {
         backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
@@ -1304,7 +1318,7 @@ export default {
     // 工具栏背景样式
     toolbarBackgroundStyle() {
       const member = this.members[this.selectMemberThemeIndex];
-      const bgImage = `/idol/${member.name}.png`;
+      const bgImage = `/${IMAGE_URL}${member.name}.png`;
       
       return {
         backgroundImage: `url('${bgImage}')`,
@@ -1317,7 +1331,7 @@ export default {
     // 书签背景样式
     bookmarkBackgroundStyle() {
       const member = this.members[this.selectMemberThemeIndex];
-      const bgImage = `/idol/${member.name}.png`;
+      const bgImage = `/${IMAGE_URL}${member.name}.png`;
       
       return {
         backgroundImage: `url('${bgImage}')`,
@@ -1330,7 +1344,7 @@ export default {
     // Live背景样式
     liveBackgroundStyle() {
       const member = this.members[this.selectMemberThemeIndex];
-      const bgImage = `/idol/${member.name}.png`;
+      const bgImage = `/${IMAGE_URL}${member.name}.png`;
       
       return {
         backgroundImage: `url('${bgImage}')`,
@@ -1349,7 +1363,7 @@ export default {
         items.push({
           id: `bookmark-${bookmark.id}`,
           title: bookmark.title || '未命名书签',
-          icon: bookmark.icon || '/utils/collect.png',
+          icon: bookmark.icon || APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png',
           url: bookmark.url,
           canDelete: true // 标记可以删除
         });
@@ -1360,7 +1374,7 @@ export default {
         items.push({
           id: 'add-bookmark', 
           title: '新增书签', 
-          icon: '/utils/addBookMark.png', 
+          icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'addBookMark.png',
           url: null,
           canDelete: false // 新增按钮不能删除
         });

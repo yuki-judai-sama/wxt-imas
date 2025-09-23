@@ -1374,7 +1374,7 @@ export default {
         items.push({
           id: 'add-bookmark', 
           title: '新增书签', 
-          icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'addBookMark.png',
+          icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'add.png',
           url: null,
           canDelete: false // 新增按钮不能删除
         });

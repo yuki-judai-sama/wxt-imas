@@ -63,6 +63,7 @@
         v-model="memberDrawerVisible"
         direction="rtl"
         size="600px"
+        :append-to-body="true"
         :header-style="{ 
           padding: '20px 24px', 
           fontSize: '20px', 
@@ -209,243 +210,40 @@
       <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'ToolList.png'" alt="工具箱" class="toolbar-icon" draggable="false" />
     </div>
     
-    <!-- 自定义工具栏模态框 -->
-    <div v-if="toolbarDialogVisible" class="toolbar-modal" @click="closeToolbar">
-      <div class="toolbar-modal-content" :style="toolbarBackgroundStyle" @click.stop>
-        <!-- 头部 -->
-        <div class="toolbar-header">
-          <h2 class="toolbar-title-header">工具箱</h2>
-          <button class="toolbar-close-btn" @click="closeToolbar">×</button>
-        </div>
-        
-        <!-- 主体内容 -->
-        <div class="toolbar-body">
-          <div class="toolbar-grid">
-            <!-- 第一行 -->
-            <div class="toolbar-row">
-              <div class="toolbar-item" v-for="item in toolbarItems.slice(0, 5)" :key="item.id" @click="handleToolbarClick(item)">
-                <div class="toolbar-icon-wrapper">
-                  <div class="toolbar-icon-circle">
-                    <img :src="item.icon" :alt="item.title" class="toolbar-icon-img" draggable="false" />
-                  </div>
-                </div>
-                <div class="toolbar-title">{{ item.title }}</div>
-              </div>
-            </div>
-            
-            <!-- 第二行 -->
-            <div class="toolbar-row">
-              <div class="toolbar-item" v-for="item in toolbarItems.slice(5, 10)" :key="item.id" @click="handleToolbarClick(item)">
-                <div class="toolbar-icon-wrapper">
-                  <div class="toolbar-icon-circle">
-                    <img :src="item.icon" :alt="item.title" class="toolbar-icon-img" draggable="false" />
-                  </div>
-                </div>
-                <div class="toolbar-title">{{ item.title }}</div>
-              </div>
-            </div>
-            
-            <!-- 第三行 -->
-            <div class="toolbar-row">
-              <div class="toolbar-item" v-for="item in toolbarItems.slice(10, 15)" :key="item.id" @click="handleToolbarClick(item)">
-                <div class="toolbar-icon-wrapper">
-                  <div class="toolbar-icon-circle">
-                    <img :src="item.icon" :alt="item.title" class="toolbar-icon-img" draggable="false" />
-                  </div>
-                </div>
-                <div class="toolbar-title">{{ item.title }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 自定义工具栏模态框（提取为组件） -->
+    <ToolbarModal
+      :visible="toolbarDialogVisible"
+      :background-style="toolbarBackgroundStyle"
+      :items="toolbarItems"
+      @close="closeToolbar"
+      @item-click="handleToolbarClick"
+    />
     
-    <!-- 书签管理模态框 -->
-    <div v-if="bookmarkDialogVisible" class="bookmark-modal" @click="closeBookmarkDialog">
-      <div class="bookmark-modal-content" :style="bookmarkBackgroundStyle" @click.stop>
-        <!-- 头部 -->
-        <div class="bookmark-header">
-          <button class="bookmark-back-btn" @click="goBackToToolbar" title="回到工具箱">
-            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
-          </button>
-          <h2 class="bookmark-title-header">书签管理</h2>
-          <button class="bookmark-close-btn" @click="closeBookmarkDialog">×</button>
-        </div>
-        
-        <!-- 主体内容 -->
-        <div class="bookmark-body">
-          <div class="bookmark-grid">
-            <!-- 书签项 -->
-            <div 
-              v-for="item in bookmarkItems" 
-              :key="item.id" 
-              class="bookmark-item" 
-              @click="handleBookmarkClick(item)"
-            >
-              <!-- 删除按钮 -->
-              <div 
-                v-if="item.canDelete" 
-                class="bookmark-delete-btn" 
-                @click.stop="deleteBookmark(item.id.split('-')[1])"
-                title="删除书签"
-              >
-                <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'delete.png'" alt="删除" class="delete-icon" draggable="false" />
-              </div>
-              
-              <div class="bookmark-icon-wrapper">
-                <div class="bookmark-icon-circle">
-                  <img 
-                    :src="item.icon" 
-                    :alt="item.title" 
-                    class="bookmark-icon-img" 
-                    draggable="false"
-                    @error="handleIconError"
-                  />
-                </div>
-              </div>
-              <div class="bookmark-title">{{ item.title }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 书签管理模态框（组件） -->
+    <BookmarkManager
+      :visible="bookmarkDialogVisible"
+      :background-style="bookmarkBackgroundStyle"
+      @bookmarks-updated="bookmarks = $event"
+      @close="closeBookmarkDialog"
+      @back="goBackToToolbar"
+    />
     
-    <!-- 新增书签表单模态框 -->
-    <div v-if="addBookmarkDialogVisible" class="add-bookmark-modal" @click="closeAddBookmarkDialog">
-      <div class="add-bookmark-modal-content" :style="bookmarkBackgroundStyle" @click.stop>
-        <!-- 头部 -->
-        <div class="add-bookmark-header">
-          <button class="add-bookmark-back-btn" @click="closeAddBookmarkDialog" title="返回书签管理">
-            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
-          </button>
-          <h2 class="add-bookmark-title-header">新增书签</h2>
-        </div>
-        
-        <!-- 表单内容 -->
-        <div class="add-bookmark-body">
-          <div class="add-bookmark-form">
-            <div class="form-group">
-              <label class="form-label">网址地址</label>
-              <input 
-                v-model="newBookmark.url" 
-                type="url" 
-                class="form-input" 
-                placeholder="请输入网址，如：https://www.bilibili.com"
-                @input="handleUrlInput"
-              />
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">备注</label>
-              <input 
-                v-model="newBookmark.title" 
-                type="text" 
-                class="form-input" 
-                placeholder="请输入备注，如：哔哩哔哩"
-                maxlength="20"
-              />
-            </div>
-            
-            <div class="form-group">
-              <label class="form-label">图标预览</label>
-              <div class="icon-preview">
-                <img 
-                  :src="newBookmark.icon" 
-                  alt="图标预览" 
-                  class="preview-icon"
-                  draggable="false"
-                  @error="handleIconError"
-                />
-              </div>
-            </div>
-            
-            <div class="form-actions">
-              <button class="cancel-btn" @click="closeAddBookmarkDialog">取消</button>
-              <button class="save-btn" @click="saveNewBookmark">保存</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     
-    <!-- Live信息模态框 -->
-    <div v-if="liveDialogVisible" class="live-modal" @click="closeLiveDialog">
-      <div class="live-modal-content" :style="liveBackgroundStyle" @click.stop>
-        <!-- 头部 -->
-        <div class="live-header">
-          <button class="live-back-btn" @click="goBackToToolbarFromLive" title="回到工具箱">
-            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
-          </button>
-          <h2 class="live-title-header">イベント·ライブ</h2>
-          <button class="live-close-btn" @click="closeLiveDialog">×</button>
-        </div>
-        
-        <!-- 主体内容 -->
-        <div class="live-body">
-          <!-- 空状态提示 -->
-          <div v-if="liveInfoList.length === 0" class="live-empty-state">
-            <div class="live-empty-icon">🎤</div>
-            <div class="live-empty-text">暂无Live信息</div>
-          </div>
-          
-          <!-- Live信息网格 -->
-          <div v-else class="live-grid">
-            <div 
-              v-for="(live, index) in liveInfoList" 
-              :key="index" 
-              class="live-item"
-            >
-              <!-- Live图片 -->
-              <div class="live-image-container">
-                <img 
-                  :src="live.imageUrl" 
-                  :alt="live.title" 
-                  class="live-image"
-                  draggable="false"
-                  @error="handleLiveImageError"
-                />
-              </div>
-              
-              <!-- Live信息 -->
-              <div class="live-info">
-                <div class="live-title">{{ live.title }}</div>
-                <div class="live-tag" :class="getLiveTagClass(live.tag)">
-                  {{ live.tag || '受付は終了しました' }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
     
-    <!-- 底部横向书签栏 -->
-    <div v-if="showBottomBookmarkBar" class="bottom-bookmark-bar" @wheel="handleBookmarkBarScroll">
-      <div class="bookmark-bar-container">
-        <div class="bookmark-bar-scroll" ref="bookmarkBarScroll">
-          <div 
-            v-for="bookmark in bookmarks" 
-            :key="bookmark.id" 
-            class="bottom-bookmark-item"
-            @click="openBookmarkUrl(bookmark.url)"
-            :title="bookmark.title"
-          >
-            <img 
-              :src="bookmark.icon" 
-              :alt="bookmark.title" 
-              class="bottom-bookmark-icon"
-              draggable="false"
-              @error="handleIconError"
-            />
-          </div>
-          <!-- 空状态提示 -->
-          <div v-if="bookmarks.length === 0" class="bookmark-empty-hint">
-            <span>暂无书签，请前往工具箱添加</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Live信息模态框（组件） -->
+    <LiveModal
+      :visible="liveDialogVisible"
+      :background-style="liveBackgroundStyle"
+      @close="closeLiveDialog"
+      @back="goBackToToolbarFromLive"
+    />
+    
+    <!-- 底部横向书签栏（组件） -->
+    <BottomBookmarkBar
+      v-if="showBottomBookmarkBar"
+      :visible="showBottomBookmarkBar"
+      :bookmarks="bookmarks"
+    />
     
   </div>
 </template>
@@ -454,6 +252,10 @@
 import $axios from '/src/utils/$axios.js'
 import { APP_CONFIG, searchEngines } from '/src/utils/appConfig.js'
 import { members, DEFAULT_MEMBERS, IMAGE_URL, HEAD_IMAGE_PREFIX, TITLE } from '/src/utils/gakumasuConfig.js'
+import ToolbarModal from '/components/ToolbarModal.vue'
+import BookmarkManager from '/components/BookmarkManager.vue'
+import LiveModal from '/components/LiveModal.vue'
+import BottomBookmarkBar from '/components/BottomBookmarkBar.vue'
 import { 
   hexToRgb, toRgba, getMemberByName, getMemberByTwitter, getMemberDisplayName,
   formatDate, convertLinks, getImageUrl, isCardImgUrl, storage, notifyNewTab
@@ -461,6 +263,7 @@ import {
 
 export default {
   name: "NewTab",
+  components: { ToolbarModal, BookmarkManager, LiveModal, BottomBookmarkBar },
   data() {
     return {
       // 主题相关
@@ -490,6 +293,8 @@ export default {
       showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
       searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE,
       showBottomBookmarkBar: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR), APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR),
+      // 樱花特效
+      showSakura: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SAKURA), APP_CONFIG.DEFAULTS.SHOW_SAKURA),
       
       // 工具栏相关
       toolbarDialogVisible: false,
@@ -498,15 +303,6 @@ export default {
       bookmarks: [], // 存储用户的书签
       // Live信息相关
       liveDialogVisible: false,
-      liveInfoList: [], // 存储Live信息
-      // 新增书签表单相关
-      addBookmarkDialogVisible: false,
-      newBookmark: {
-        url: '',
-        title: '',
-        icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png' // 默认图标
-      },
-      urlInputTimer: null, // URL输入防抖定时器
       toolbarItems: [
         { id: 1, title: '书签', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png' },
         { id: 2, title: 'イベント·ライブ', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png' },
@@ -605,7 +401,12 @@ export default {
         e.preventDefault();
         this.searchIconIndex = (this.searchIconIndex + 1) % this.searchEngines.length;
       } else if (e.key === "Enter") {
-        await this.searchContent(this.searchValue);
+        const value = (this.searchValue ?? '').trim();
+        if (!value) {
+          // 空内容时不触发搜索
+          return;
+        }
+        await this.searchContent(value);
       }
     },
     
@@ -643,19 +444,6 @@ export default {
       });
     },
     
-    // 获取Live信息数据
-    async getLiveInfoList() {
-      try {
-        const response = await $axios.post(APP_CONFIG.ASOBI_TICKET_BOOTS);
-        if (response.data.success && response.data.data) {
-          this.liveInfoList = response.data.data;
-        }
-        return response.data;
-      } catch (error) {
-        console.error('获取Live信息失败:', error);
-        return null;
-      }
-    },
     
     // 按成员筛选推文
     filterByMember(memberName) {
@@ -723,6 +511,8 @@ export default {
           this.handleSearchBoxSizeChange(e.newValue);
         } else if (e.key === APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR) {
           this.handleBottomBookmarkBarChange(e.newValue);
+        } else if (e.key === APP_CONFIG.STORAGE_KEYS.SHOW_SAKURA) {
+          this.handleSakuraChange(e.newValue);
         }
       };
       window.addEventListener('storage', localStorageListener);
@@ -838,6 +628,9 @@ export default {
       }
       if (data.showBottomBookmarkBar !== undefined) {
         this.handleBottomBookmarkBarChange(data.showBottomBookmarkBar);
+      }
+      if (data.showSakura !== undefined) {
+        this.handleSakuraChange(data.showSakura);
       }
     },
     
@@ -957,197 +750,7 @@ export default {
       this.toolbarDialogVisible = true;
     },
     
-    // 处理书签项点击
-    handleBookmarkClick(bookmark) {
-      if (bookmark.id === 'add-bookmark') {
-        // 打开新增书签表单
-        this.bookmarkDialogVisible = false;
-        this.addBookmarkDialogVisible = true;
-        this.resetNewBookmarkForm();
-      } else {
-        // 打开书签链接
-        window.open(bookmark.url, '_blank');
-      }
-    },
     
-    // 重置新增书签表单
-    resetNewBookmarkForm() {
-      this.newBookmark = {
-        url: '',
-        title: '',
-        icon: '/utils/collect.png'
-      };
-    },
-    
-    // 关闭新增书签表单
-    closeAddBookmarkDialog() {
-      this.addBookmarkDialogVisible = false;
-      this.bookmarkDialogVisible = true;
-    },
-    
-    // 保存新书签
-    async saveNewBookmark() {
-      if (!this.newBookmark.url.trim()) {
-        alert('请输入网址');
-        return;
-      }
-      
-      // 如果用户没有输入备注，使用默认值
-      if (!this.newBookmark.title.trim()) {
-        this.newBookmark.title = '新书签';
-      }
-      
-      // 检查是否已达到最大书签数量
-      if (this.bookmarks.length >= 15) {
-        alert('最多只能保存15个书签');
-        return;
-      }
-      
-      try {
-        // 规范化URL（确保有协议）
-        let normalizedUrl = this.newBookmark.url.trim();
-        if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-          normalizedUrl = 'https://' + normalizedUrl;
-        }
-        
-        // 获取网站图标（Google会自动处理图标不存在的情况）
-        this.newBookmark.icon = await this.getWebsiteIcon(normalizedUrl);
-        
-        // 添加到书签列表
-        const bookmark = {
-          id: Date.now(), // 使用时间戳作为唯一ID
-          url: normalizedUrl, // 使用规范化后的URL
-          title: this.newBookmark.title.trim(),
-          icon: this.newBookmark.icon,
-          createdAt: new Date().toISOString()
-        };
-        
-        this.bookmarks.push(bookmark);
-        
-        // 保存到storage
-        this.saveBookmarksToStorage();
-        
-        // 关闭表单，返回书签管理页面
-        this.closeAddBookmarkDialog();
-        
-      } catch (error) {
-        console.error('保存书签失败:', error);
-        alert('保存书签失败，请重试');
-      }
-    },
-    
-    // 获取网站图标
-    async getWebsiteIcon(url) {
-      try {
-        // 确保URL有协议
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-          url = 'https://' + url;
-        }
-        
-        const domain = new URL(url).hostname;
-        
-        // 简单的域名格式验证
-        if (!this.isValidDomain(domain)) {
-          return APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-        }
-        
-        // 使用Google Favicon API
-        const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-        
-        return faviconUrl;
-        
-      } catch (error) {
-        console.error('获取网站图标失败:', error);
-        return APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-      }
-    },
-    
-    // 简单的域名格式验证
-    isValidDomain(domain) {
-      // 基本的域名格式检查
-      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?(\.[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?)*$/;
-      return domainRegex.test(domain) && domain.length > 3 && domain.length < 255;
-    },
-    
-    
-    // 保存书签到storage
-    saveBookmarksToStorage() {
-      storage.set('userBookmarks', JSON.stringify(this.bookmarks));
-    },
-    
-    // 从storage加载书签
-    loadBookmarksFromStorage() {
-      const savedBookmarksStr = storage.get('userBookmarks');
-      if (savedBookmarksStr) {
-        try {
-          const savedBookmarks = JSON.parse(savedBookmarksStr);
-          if (Array.isArray(savedBookmarks)) {
-            // 保留所有书签，但修复图标URL
-            this.bookmarks = savedBookmarks.map(bookmark => {
-              try {
-                if (bookmark.url) {
-                  const domain = new URL(bookmark.url).hostname;
-                  if (this.isValidDomain(domain)) {
-                    // 如果URL有效，重新生成图标URL
-                    bookmark.icon = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-                  } else {
-                    // 如果URL无效，使用本地图标
-                    bookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-                  }
-                } else {
-                  // 如果没有URL，使用本地图标
-                  bookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-                }
-              } catch (error) {
-                // URL解析失败，使用本地图标
-                bookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-              }
-              return bookmark;
-            });
-          }
-        } catch (error) {
-          console.error('解析书签数据失败:', error);
-          // 解析失败时不自动清空书签，保持原有书签数据
-        }
-      }
-    },
-    
-    // 处理图标加载错误
-    handleIconError(event) {
-      // 当图标加载失败时，自动切换到本地图标
-      event.target.src = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-    },
-    
-    // 处理URL输入（防抖处理）
-    handleUrlInput() {
-      // 清除之前的定时器
-      if (this.urlInputTimer) {
-        clearTimeout(this.urlInputTimer);
-      }
-      
-      // 设置防抖定时器，500ms后执行
-      this.urlInputTimer = setTimeout(async () => {
-        if (this.newBookmark.url.trim()) {
-          try {
-            // 获取图标（Google会自动处理图标不存在的情况）
-            this.newBookmark.icon = await this.getWebsiteIcon(this.newBookmark.url);
-        } catch (error) {
-          console.error('获取网站图标失败:', error);
-          // 出错时使用本地图标
-          this.newBookmark.icon = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png';
-        }
-        }
-      }, 500);
-    },
-    
-    // 删除书签
-    deleteBookmark(bookmarkId) {
-      // 直接删除，不需要确认
-      // 从书签数组中移除指定ID的书签
-      this.bookmarks = this.bookmarks.filter(bookmark => bookmark.id !== parseInt(bookmarkId));
-      // 保存到storage
-      this.saveBookmarksToStorage();
-    },
     
     // 键盘事件处理（工具栏专用）
     handleToolbarKeydown(e) {
@@ -1163,28 +766,6 @@ export default {
         }
       }
     },
-    
-    // 处理底部书签栏滚动
-    handleBookmarkBarScroll(e) {
-      e.preventDefault();
-      const scrollContainer = this.$refs.bookmarkBarScroll;
-      if (scrollContainer) {
-        const scrollAmount = 120; // 每次滚动的距离
-        if (e.deltaY > 0) {
-          // 向下滚动，向右移动
-          scrollContainer.scrollLeft += scrollAmount;
-        } else {
-          // 向上滚动，向左移动
-          scrollContainer.scrollLeft -= scrollAmount;
-        }
-      }
-    },
-    
-    // 打开书签链接
-    openBookmarkUrl(url) {
-      window.open(url, '_blank');
-    },
-    
     // 处理Live图片加载错误
     handleLiveImageError(event) {
       event.target.src = APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png';
@@ -1197,6 +778,52 @@ export default {
       }
       // 其他所有情况都是蓝色
       return 'live-tag-active';
+    },
+
+    // 处理樱花特效显示变更
+    handleSakuraChange(showSakura) {
+      this.showSakura = this.parseBooleanSetting(showSakura, APP_CONFIG.DEFAULTS.SHOW_SAKURA);
+      if (this.showSakura) {
+        this.enableSakura();
+      } else {
+        this.disableSakura();
+      }
+    },
+
+    enableSakura() {
+      try {
+        // 先移除隐藏样式，确保可见
+        const hideStyle = document.getElementById('sakura-hide-style');
+        if (hideStyle) hideStyle.parentNode.removeChild(hideStyle);
+        const existing = document.getElementById('canvas_sakura');
+        if (existing) return; // 已存在
+        const scriptId = 'sakura-script';
+        if (!document.getElementById(scriptId)) {
+          const script = document.createElement('script');
+          script.id = scriptId;
+          script.src = '/js/flower.js';
+          script.onload = () => {
+            if (typeof window.startSakura === 'function') {
+              window.startSakura();
+            }
+          };
+          document.body.appendChild(script);
+        } else if (typeof window.startSakura === 'function') {
+          window.startSakura();
+        }
+      } catch (e) { console.error('启用樱花失败', e); }
+    },
+
+    disableSakura() {
+      try {
+        // 最简单高效：通过样式隐藏画布，避免任何闪烁或卡帧
+        if (!document.getElementById('sakura-hide-style')) {
+          const style = document.createElement('style');
+          style.id = 'sakura-hide-style';
+          style.textContent = '#canvas_sakura{display:none!important;}';
+          document.head.appendChild(style);
+        }
+      } catch (e) { console.error('关闭樱花失败', e); }
     }
   },
   mounted() {
@@ -1207,8 +834,7 @@ export default {
     document.addEventListener("click", this.handleDocumentClick);
     // 获取推文数据
     this.getTwitterContent();
-      // 获取Live信息数据
-      this.getLiveInfoList();
+    
     // 监听主题变更
     this.setupThemeChangeListener();
     // 监听设置变更
@@ -1219,8 +845,13 @@ export default {
     if (this.showTimeDisplay) {
     this.startTimeUpdate();
     }
-    // 加载书签数据
-    this.loadBookmarksFromStorage();
+    // 根据设置启用/禁用樱花
+    if (this.showSakura) {
+      this.enableSakura();
+    } else {
+      this.disableSakura();
+    }
+    
   },
   
   beforeUnmount() {
@@ -1240,6 +871,8 @@ export default {
     }
     // 停止时间更新
     this.stopTimeUpdate();
+    // 关闭樱花
+    this.disableSakura();
   },
   computed: {
     IMAGE_URL() {
@@ -1353,35 +986,7 @@ export default {
         backgroundRepeat: 'no-repeat'
       };
     },
-    
-    // 书签项列表
-    bookmarkItems() {
-      const items = [];
-      
-      // 首先添加用户的书签
-      this.bookmarks.forEach((bookmark) => {
-        items.push({
-          id: `bookmark-${bookmark.id}`,
-          title: bookmark.title || '未命名书签',
-          icon: bookmark.icon || APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png',
-          url: bookmark.url,
-          canDelete: true // 标记可以删除
-        });
-      });
-      
-      // 只有当书签数量小于15时，才添加"新增书签"按钮
-      if (this.bookmarks.length < 15) {
-        items.push({
-          id: 'add-bookmark', 
-          title: '新增书签', 
-          icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'add.png',
-          url: null,
-          canDelete: false // 新增按钮不能删除
-        });
-      }
-      
-      return items;
-    }
+
   }
 };
 </script>
@@ -2211,1092 +1816,6 @@ html, body, #app {  /*清除自带外边框*/
   width: 24px;
   height: 24px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-}
-
-/* 自定义工具栏模态框样式 */
-.toolbar-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px) saturate(1.5);
-  -webkit-backdrop-filter: blur(12px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.toolbar-modal-content {
-  width: 75vw;
-  height: 80vh;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-/* 添加遮罩层增强毛玻璃效果 */
-.toolbar-modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1;
-  border-radius: 16px;
-}
-
-
-.toolbar-header {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 16px 16px 0 0;
-  position: relative;
-  z-index: 2;
-}
-
-.toolbar-title-header {
-  color: #fff;
-  font-weight: 600;
-  font-size: 18px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  margin: 0;
-}
-
-.toolbar-close-btn {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.toolbar-close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
-}
-
-.toolbar-body {
-  flex: 1;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px) saturate(1.5);
-  -webkit-backdrop-filter: blur(15px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
-}
-
-/* 工具栏网格布局 */
-.toolbar-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  max-width: 100%;
-}
-
-.toolbar-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.toolbar-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(18px) saturate(1.6);
-  -webkit-backdrop-filter: blur(18px) saturate(1.6);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 1.5;
-  min-height: 45px;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.toolbar-item:hover {
-  transform: translateY(-3px) scale(1.02);
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(22px) saturate(1.8);
-  -webkit-backdrop-filter: blur(22px) saturate(1.8);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.25),
-    0 0 20px rgba(255, 255, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-.toolbar-icon-wrapper {
-  margin-bottom: 4px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.toolbar-icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px) saturate(1.2);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  z-index: 2;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-.toolbar-item:hover .toolbar-icon-circle {
-  background: rgba(255, 255, 255, 1);
-  backdrop-filter: blur(15px) saturate(1.5);
-  -webkit-backdrop-filter: blur(15px) saturate(1.5);
-  border-color: rgba(255, 255, 255, 1);
-  transform: scale(1.05);
-  box-shadow: 
-    0 6px 16px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.toolbar-icon-img {
-  width: 28px;
-  height: 28px;
-  filter: none;
-  transition: all 0.3s ease;
-}
-
-.toolbar-item:hover .toolbar-icon-img {
-  transform: scale(1.1) rotate(5deg);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.toolbar-title {
-  font-size: 13px;
-  color: #fff;
-  text-align: center;
-  font-weight: 600;
-  line-height: 1.2;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  z-index: 2;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.toolbar-item:hover .toolbar-title {
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-/* 微妙的发光动画 */
-@keyframes subtleGlow {
-  0%, 100% {
-    box-shadow: 
-      0 4px 12px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  }
-  50% {
-    box-shadow: 
-      0 4px 12px rgba(0, 0, 0, 0.15),
-      0 0 8px rgba(255, 255, 255, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  }
-}
-
-.toolbar-item:not(:hover) {
-  animation: subtleGlow 3s ease-in-out infinite;
-}
-
-/* 书签管理模态框样式 */
-.bookmark-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px) saturate(1.5);
-  -webkit-backdrop-filter: blur(12px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.bookmark-modal-content {
-  width: 75vw;
-  height: 80vh;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-/* 添加遮罩层增强毛玻璃效果 */
-.bookmark-modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1;
-  border-radius: 16px;
-}
-
-.bookmark-header {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 16px 16px 0 0;
-  position: relative;
-  z-index: 2;
-}
-
-.bookmark-back-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin-right: 12px;
-  z-index: 10;
-  position: relative;
-}
-
-.bookmark-back-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.back-icon {
-    width: 20px;
-    height: 20px;
-  filter: brightness(0) invert(1);
-}
-
-.bookmark-title-header {
-  color: #fff;
-  font-weight: 600;
-  font-size: 18px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  margin: 0;
-  flex: 1;
-  text-align: center;
-}
-
-.bookmark-close-btn {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.bookmark-close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
-}
-
-.bookmark-body {
-  flex: 1;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px) saturate(1.5);
-  -webkit-backdrop-filter: blur(15px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
-}
-
-/* 书签网格布局 - 三行五列 */
-.bookmark-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 20px;
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.bookmark-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(18px) saturate(1.6);
-  -webkit-backdrop-filter: blur(18px) saturate(1.6);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.bookmark-delete-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 10;
-  opacity: 0;
-  transform: scale(0.8);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.delete-icon {
-  width: 12px;
-  height: 12px;
-  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
-}
-
-.bookmark-item:hover .bookmark-delete-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.bookmark-delete-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.1);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-}
-
-.bookmark-item:hover {
-  transform: translateY(-3px) scale(1.02);
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(22px) saturate(1.8);
-  -webkit-backdrop-filter: blur(22px) saturate(1.8);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.25),
-    0 0 20px rgba(255, 255, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-.bookmark-icon-wrapper {
-  margin-bottom: 8px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bookmark-icon-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px) saturate(1.2);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  z-index: 2;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-.bookmark-item:hover .bookmark-icon-circle {
-  background: rgba(255, 255, 255, 1);
-  backdrop-filter: blur(15px) saturate(1.5);
-  -webkit-backdrop-filter: blur(15px) saturate(1.5);
-  border-color: rgba(255, 255, 255, 1);
-  transform: scale(1.05);
-  box-shadow: 
-    0 6px 16px rgba(0, 0, 0, 0.3),
-    0 0 15px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.bookmark-icon-img {
-  width: 28px;
-  height: 28px;
-  filter: none;
-  transition: all 0.3s ease;
-}
-
-.bookmark-item:hover .bookmark-icon-img {
-  transform: scale(1.1) rotate(5deg);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.bookmark-title {
-  font-size: 13px;
-  color: #fff;
-  text-align: center;
-  font-weight: 600;
-  line-height: 1.2;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  z-index: 2;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.bookmark-item:hover .bookmark-title {
-  color: #fff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-}
-
-/* 书签项的微妙发光动画 */
-.bookmark-item:not(:hover) {
-  animation: subtleGlow 3s ease-in-out infinite;
-}
-
-/* Live信息模态框样式 */
-.live-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px) saturate(1.5);
-  -webkit-backdrop-filter: blur(12px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.live-modal-content {
-  width: 80vw;
-  height: 85vh;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-/* 添加遮罩层增强毛玻璃效果 */
-.live-modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1;
-  border-radius: 16px;
-}
-
-.live-header {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 16px 16px 0 0;
-  position: relative;
-  z-index: 2;
-}
-
-.live-back-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin-right: 12px;
-  z-index: 10;
-  position: relative;
-}
-
-.live-back-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.live-title-header {
-  color: #fff;
-  font-weight: 600;
-  font-size: 18px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  margin: 0;
-  flex: 1;
-  text-align: center;
-}
-
-.live-close-btn {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.live-close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
-}
-
-.live-body {
-  flex: 1;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px) saturate(1.5);
-  -webkit-backdrop-filter: blur(15px) saturate(1.5);
-  overflow-y: auto;
-  position: relative;
-  z-index: 2;
-}
-
-/* Live信息网格布局 */
-.live-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  width: 100%;
-  max-width: 100%;
-  padding: 20px 0;
-  box-sizing: border-box;
-}
-
-.live-item {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  overflow: hidden;
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-}
-
-.live-item:hover {
-  transform: translateY(-3px) scale(1.02);
-  background: rgba(255, 255, 255, 1);
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.2),
-    0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.live-image-container {
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  border-radius: 12px 12px 0 0;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.live-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  transition: all 0.3s ease;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.live-item:hover .live-image {
-  transform: scale(1.05);
-}
-
-.live-info {
-  padding: 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.live-title {
-  font-size: 16px;
-  color: #333;
-  font-weight: 600;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.live-tag {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 12px;
-  text-align: center;
-  align-self: flex-start;
-  transition: all 0.3s ease;
-}
-
-.live-tag-active {
-  background: rgba(147, 197, 253, 0.3);
-  color: #3b82f6;
-  border: 1px solid rgba(147, 197, 253, 0.5);
-}
-
-.live-tag-ended {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.live-tag-default {
-  background: rgba(156, 163, 175, 0.2);
-  color: #9ca3af;
-  border: 1px solid rgba(156, 163, 175, 0.3);
-}
-
-/* 空状态样式 */
-.live-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-}
-
-.live-empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.6;
-}
-
-.live-empty-text {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* Live项的微妙发光动画 */
-.live-item:not(:hover) {
-  animation: subtleGlow 3s ease-in-out infinite;
-}
-
-/* 新增书签表单模态框样式 */
-.add-bookmark-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px) saturate(1.5);
-  -webkit-backdrop-filter: blur(12px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.add-bookmark-modal-content {
-  width: 400px;
-  height: 500px;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-/* 添加遮罩层增强毛玻璃效果 */
-.add-bookmark-modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1;
-  border-radius: 16px;
-}
-
-.add-bookmark-header {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  border-radius: 16px 16px 0 0;
-  position: relative;
-  z-index: 2;
-}
-
-.add-bookmark-back-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin-right: 12px;
-  z-index: 10;
-  position: relative;
-}
-
-.add-bookmark-back-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.add-bookmark-back-btn .back-icon {
-  width: 20px;
-  height: 20px;
-  filter: brightness(0) invert(1);
-}
-
-.add-bookmark-title-header {
-  color: #fff;
-  font-weight: 600;
-  font-size: 18px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  margin: 0;
-  flex: 1;
-  text-align: center;
-}
-
-.add-bookmark-body {
-  flex: 1;
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px) saturate(1.5);
-  -webkit-backdrop-filter: blur(15px) saturate(1.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-}
-
-.add-bookmark-form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-label {
-  color: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.form-input {
-  padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 14px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
-}
-
-.form-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.icon-preview {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.preview-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-}
-
-.form-actions {
-  display: flex;
-    gap: 12px;
-  margin-top: 20px;
-}
-
-.cancel-btn, .save-btn {
-  flex: 1;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.cancel-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
-
-.save-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.save-btn:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6b4c93 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-/* 底部横向书签栏样式 */
-.bottom-bookmark-bar {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 60px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 30px;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 20px;
-  box-sizing: border-box;
-  width: 420px; /* 固定宽度，精确显示7个书签 */
-}
-
-.bookmark-bar-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.bookmark-bar-scroll {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-behavior: smooth;
-  padding: 0 10px;
-  box-sizing: border-box;
-  /* 隐藏滚动条但保持滚动功能 */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
-.bookmark-bar-scroll::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
-}
-
-.bottom-bookmark-item {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.bottom-bookmark-item:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-3px) scale(1.08);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.2),
-    0 0 20px rgba(255, 255, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.bottom-bookmark-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-  transition: all 0.3s ease;
-}
-
-.bottom-bookmark-item:hover .bottom-bookmark-icon {
-  transform: scale(1.1);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
-}
-
-/* 空状态提示样式 */
-.bookmark-empty-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  white-space: nowrap;
 }
 
 </style>

@@ -89,6 +89,11 @@
         </div>
 
         <div class="setting-item">
+          <label class="setting-label">樱花飘落</label>
+          <el-switch v-model="showSakura" @change="handleSakuraChange" />
+        </div>
+
+        <div class="setting-item">
           <label class="setting-label">搜索框大小</label>
           <el-select v-model="searchBoxSize" placeholder="选择搜索框大小" style="width: 200px" @change="handleSearchBoxSizeChange">
             <el-option
@@ -206,7 +211,8 @@ export default {
       showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
       showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
       searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE,
-      showBottomBookmarkBar: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR), APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR)
+      showBottomBookmarkBar: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR), APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR),
+      showSakura: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SAKURA), APP_CONFIG.DEFAULTS.SHOW_SAKURA)
     };
   },
   methods: {
@@ -261,6 +267,14 @@ export default {
       // 立即通知新标签页
       notifyNewTab('SETTINGS_CHANGE', { 
         showBottomBookmarkBar: value
+      });
+    },
+
+    // 处理樱花特效开关
+    handleSakuraChange(value) {
+      storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_SAKURA, value);
+      notifyNewTab('SETTINGS_CHANGE', {
+        showSakura: value
       });
     },
     
@@ -359,7 +373,8 @@ export default {
         showTimeDisplay: this.showTimeDisplay,
         showSearchBox: this.showSearchBox,
         searchBoxSize: this.searchBoxSize,
-        showBottomBookmarkBar: this.showBottomBookmarkBar
+      showBottomBookmarkBar: this.showBottomBookmarkBar,
+      showSakura: this.showSakura
       });
     },
     

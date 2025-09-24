@@ -11,11 +11,11 @@
         <div class="add-bookmark-form">
           <div class="form-group">
             <label class="form-label">网址地址</label>
-            <input v-model="model.url" type="url" class="form-input" placeholder="请输入网址，如：https://www.bilibili.com" @input="onUrlInput" @keydown.enter.stop.prevent="emitSave" />
+            <input v-model="model.url" type="url" class="form-input" placeholder="请输入网址，如：https://www.bilibili.com" @input="onUrlInput" @keydown.enter.stop.prevent="emitSave" @keydown.tab.stop.prevent="focusNext" ref="urlInput" />
           </div>
           <div class="form-group">
             <label class="form-label">备注</label>
-            <input v-model="model.title" type="text" class="form-input" placeholder="请输入备注，如：哔哩哔哩" maxlength="20" @keydown.enter.stop.prevent="emitSave" />
+            <input v-model="model.title" type="text" class="form-input" placeholder="请输入备注，如：哔哩哔哩" maxlength="20" @keydown.enter.stop.prevent="emitSave" @keydown.tab.stop.prevent="focusNext" ref="titleInput" />
           </div>
           <div class="form-group">
             <label class="form-label">图标预览</label>
@@ -55,7 +55,19 @@ export default {
     emitSave() { this.$emit('save', { ...this.model }); },
     onUrlInput() { this.$emit('url-input', this.model.url); },
     onIconError(e) { e.target.src = this.utils('collect.png'); },
-    utils(name) { return APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL + name; }
+    utils(name) { return APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL + name; },
+    focusNext(event) {
+      // 阻止默认的 Tab 行为
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // 根据当前聚焦的输入框，切换到下一个
+      if (event.target === this.$refs.urlInput) {
+        this.$refs.titleInput.focus();
+      } else if (event.target === this.$refs.titleInput) {
+        this.$refs.urlInput.focus();
+      }
+    }
   }
 }
 </script>

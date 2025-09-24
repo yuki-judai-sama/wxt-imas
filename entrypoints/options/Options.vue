@@ -194,7 +194,8 @@
 
 <script>
 import { APP_CONFIG, searchEngines, searchBoxSizes } from '/src/utils/appConfig.js'
-import { members, DEFAULT_MEMBERS, APP_NAME, IMAGE_URL, HEAD_IMAGE_PREFIX, LOGO } from '/src/utils/gakumasuConfig.js'
+import { members as gakumasuMembers, DEFAULT_MEMBERS as gakumasuDefaultMembers, APP_NAME as gakumasuAppName, IMAGE_URL as gakumasuImageUrl, HEAD_IMAGE_PREFIX as gakumasuHeadImagePrefix, LOGO as gakumasuLogo } from '/src/utils/gakumasuConfig.js'
+import { members as shinymasuMembers, DEFAULT_MEMBERS as shinymasuDefaultMembers, APP_NAME as shinymasuAppName, IMAGE_URL as shinymasuImageUrl, HEAD_IMAGE_PREFIX as shinymasuHeadImagePrefix, LOGO as shinymasuLogo } from '/src/utils/shinymasuConfig.js'
 import { storage, notifyNewTab } from '/src/utils/util.js'
 import { Plus} from '@element-plus/icons-vue'
 
@@ -205,7 +206,9 @@ export default {
   },
   data() {
     return {
-      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || DEFAULT_MEMBERS,
+      // 当前企划
+      currentProject: storage.get(APP_CONFIG.STORAGE_KEYS.CURRENT_PROJECT) || APP_CONFIG.DEFAULTS.CURRENT_PROJECT,
+      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || this.getDefaultMember(),
       defaultSearchEngine: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_SEARCH_ENGINE) || APP_CONFIG.DEFAULTS.SEARCH_ENGINE,
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
       showTimeDisplay: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TIME_DISPLAY), APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY),
@@ -280,7 +283,7 @@ export default {
     
     // 切换成员主题
     changeMemberTheme(memberName) {
-      const member = members.find(m => m.name === memberName);
+      const member = this.members.find(m => m.name === memberName);
       if (!member) {
         this.$message.error('无效的成员选择');
         return;
@@ -300,7 +303,7 @@ export default {
     saveSettings() {
       try {
         // 验证设置有效性
-        const member = members.find(m => m.name === this.selectedMember);
+        const member = this.members.find(m => m.name === this.selectedMember);
         if (!member) {
           this.$message.error('无效的成员选择');
           return;
@@ -345,7 +348,7 @@ export default {
         type: 'warning'
       }).then(() => {
         try {
-          this.selectedMember = DEFAULT_MEMBERS;
+          this.selectedMember = this.getDefaultMember();
           this.defaultSearchEngine = APP_CONFIG.DEFAULTS.SEARCH_ENGINE;
           this.customBgUrl = null;
           this.showTimeDisplay = APP_CONFIG.DEFAULTS.SHOW_TIME_DISPLAY;
@@ -378,9 +381,14 @@ export default {
       });
     },
     
+    // 获取当前企划的默认成员
+    getDefaultMember() {
+      return this.currentProject === 'gakumasu' ? gakumasuDefaultMembers : shinymasuDefaultMembers;
+    },
+
     // 获取成员显示名称
     getMemberDisplayName(memberName) {
-      const member = members.find(m => m.name === memberName);
+      const member = this.members.find(m => m.name === memberName);
       return member ? member.memberName : memberName;
     },
     
@@ -513,9 +521,9 @@ export default {
   },
   mounted() {
     // 确保选中的成员在列表中
-    if (!members.find(m => m.name === this.selectedMember)) {
-      this.selectedMember = DEFAULT_MEMBERS;
-      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, DEFAULT_MEMBERS);
+    if (!this.members.find(m => m.name === this.selectedMember)) {
+      this.selectedMember = this.getDefaultMember();
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, this.selectedMember);
     }
     
     // 验证默认搜索引擎
@@ -527,13 +535,13 @@ export default {
   },
   computed: {
     IMAGE_URL() {
-      return IMAGE_URL;
+      return this.currentProject === 'gakumasu' ? gakumasuImageUrl : shinymasuImageUrl;
     },
     HEAD_IMAGE_PREFIX() {
-      return HEAD_IMAGE_PREFIX;
+      return this.currentProject === 'gakumasu' ? gakumasuHeadImagePrefix : shinymasuHeadImagePrefix;
     },
     LOGO() {
-      return LOGO;
+      return this.currentProject === 'gakumasu' ? gakumasuLogo : shinymasuLogo;
     },
     // 应用配置
     APP_CONFIG() {
@@ -541,12 +549,12 @@ export default {
     },
     // 应用名称（从新配置）
     APP_NAME() {
-      return APP_NAME || APP_CONFIG.APP_NAME;
+      return this.currentProject === 'gakumasu' ? gakumasuAppName : shinymasuAppName;
     },
     
     // 成员列表
     members() {
-      return members;
+      return this.currentProject === 'gakumasu' ? gakumasuMembers : shinymasuMembers;
     },
     
     // 搜索引擎列表
@@ -561,7 +569,7 @@ export default {
     
     // 当前成员主题样式
     currentMemberTheme() {
-      const member = members.find(m => m.name === this.selectedMember);
+      const member = this.members.find(m => m.name === this.selectedMember);
       if (!member) return { color: '#667eea', bgImage: '' };
       
       const hex = member.color;
@@ -571,7 +579,7 @@ export default {
       
       return {
         color: `rgb(${r}, ${g}, ${b})`,
-        bgImage: `/${IMAGE_URL}${member.name}.png`
+        bgImage: `/${this.IMAGE_URL}${member.name}.png`
       };
     },
     

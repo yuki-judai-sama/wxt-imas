@@ -192,7 +192,7 @@
       <!-- 筛选状态提示 -->
       <div v-if="selectedFilterMember && filteredTwitterContent.length > 0" class="filter-status">
         <div class="filter-info">
-          当前显示：@{{ getMemberByName(selectedFilterMember)?.twitter || selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
+          当前显示：@{{ getTwitterByMemberName(selectedFilterMember) || selectedFilterMember }} 的推文 (共 {{ filteredTwitterContent.length }} 条)
         </div>
         <el-button
             type="primary"
@@ -218,6 +218,28 @@
       @close="closeToolbar"
       @item-click="handleToolbarClick"
     />
+
+    <!-- 企划选择弹窗 -->
+    <div v-if="projectDialogVisible" class="project-modal" @click="closeProjectDialog">
+      <div class="project-modal-content" :style="toolbarBackgroundStyle" @click.stop>
+        <div class="project-header">
+          <button class="project-back-btn" @click.stop="goBackToToolbarFromProject" title="返回工具箱">
+            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
+          </button>
+          选择企划
+        </div>
+        <div class="project-grid">
+          <div class="project-item" :class="{ active: currentProject==='gakumasu' }" @click="chooseProject('gakumasu')">
+            <img :src="'/gakumasu/学マス-logo.png'" alt="学マス" class="project-logo" draggable="false" />
+            <div class="project-name">学マス</div>
+              </div>
+          <div class="project-item" :class="{ active: currentProject==='shinymasu' }" @click="chooseProject('shinymasu')">
+            <img :src="'/shinymasu/シャニマス-logo.png'" alt="シャニマス" class="project-logo" draggable="false" />
+            <div class="project-name">シャニマス</div>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <!-- 书签管理模态框（组件） -->
     <BookmarkManager
@@ -251,13 +273,14 @@
 <script>
 import $axios from '/src/utils/$axios.js'
 import { APP_CONFIG, searchEngines } from '/src/utils/appConfig.js'
-import { members, DEFAULT_MEMBERS, IMAGE_URL, HEAD_IMAGE_PREFIX, TITLE } from '/src/utils/gakumasuConfig.js'
+import { members as gakumasuMembers, DEFAULT_MEMBERS as gakumasuDefaultMembers, IMAGE_URL as gakumasuImageUrl, HEAD_IMAGE_PREFIX as gakumasuHeadImagePrefix, TITLE as gakumasuTitle, APP_NAME as gakumasuAppName, LOGO as gakumasuLogo, OFFICE_TWITTER as gakumasuOfficeTwitter } from '/src/utils/gakumasuConfig.js'
+import { members as shinymasuMembers, DEFAULT_MEMBERS as shinymasuDefaultMembers, IMAGE_URL as shinymasuImageUrl, HEAD_IMAGE_PREFIX as shinymasuHeadImagePrefix, TITLE as shinymasuTitle, APP_NAME as shinymasuAppName, LOGO as shinymasuLogo, OFFICE_TWITTER as shinymasuOfficeTwitter } from '/src/utils/shinymasuConfig.js'
 import ToolbarModal from '/components/ToolbarModal.vue'
 import BookmarkManager from '/components/BookmarkManager.vue'
 import LiveModal from '/components/LiveModal.vue'
 import BottomBookmarkBar from '/components/BottomBookmarkBar.vue'
 import { 
-  hexToRgb, toRgba, getMemberByName, getMemberByTwitter, getMemberDisplayName,
+  hexToRgb, toRgba, getMemberDisplayName,
   formatDate, convertLinks, getImageUrl, isCardImgUrl, storage, notifyNewTab
 } from '/src/utils/util.js'
 
@@ -266,8 +289,10 @@ export default {
   components: { ToolbarModal, BookmarkManager, LiveModal, BottomBookmarkBar },
   data() {
     return {
+      // 当前企划
+      currentProject: storage.get(APP_CONFIG.STORAGE_KEYS.CURRENT_PROJECT) || APP_CONFIG.DEFAULTS.CURRENT_PROJECT,
       // 主题相关
-      selectMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || DEFAULT_MEMBERS,
+      selectMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || this.getDefaultMember(),
       
       // 搜索相关
       searchValue: null,
@@ -303,10 +328,12 @@ export default {
       bookmarks: [], // 存储用户的书签
       // Live信息相关
       liveDialogVisible: false,
+      // 企划选择弹窗
+      projectDialogVisible: false,
       toolbarItems: [
         { id: 1, title: '书签', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png' },
         { id: 2, title: 'イベント·ライブ', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png' },
-        { id: 3, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 3, title: '切换企划', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'changeProject.png' },
         { id: 4, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
         { id: 5, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
         { id: 6, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
@@ -326,8 +353,6 @@ export default {
     // 工具函数封装
     hexToRgb,
     toRgba,
-    getMemberByName,
-    getMemberByTwitter,
     getMemberDisplayName,
     formatDate,
     convertLinks,
@@ -346,6 +371,13 @@ export default {
         return value === 'true';
       }
       return defaultValue;
+    },
+    // 导航栏滚轮横向滚动
+    onNavWheel(e) {
+      const el = this.$refs.navScroll;
+      if (!el) return;
+      const amount = 120;
+      if (e.deltaY > 0) el.scrollLeft += amount; else el.scrollLeft -= amount;
     },
     
     // 获取初始搜索引擎索引
@@ -421,45 +453,63 @@ export default {
     // 打开成员推特链接
     openMemberLink(index) {
       if (index === 0) {
-        window.open('https://x.com/gkmas_official', '_blank');
+        const url = this.currentProject === 'gakumasu' ? gakumasuOfficeTwitter : shinymasuOfficeTwitter;
+        if (url) window.open(url, '_blank');
       } else {
         window.open(this.members[index - 1].link, '_blank');
       }
     },
-    // 获取成员头像名称
+    // 获取成员头像名称（仅当前企划）
     getAvatarName(memberTwitter) {
-      const member = this.getMemberByTwitter(memberTwitter);
-      return member ? member.name : 'default';
+      const target = (this.members || []).find(m => (m.twitter || '').toLowerCase() === (memberTwitter || '').toLowerCase());
+      return target ? target.name : 'default';
     },
     
-    // 获取推文数据
+    // 获取推文数据（按当前企划成员过滤）
     async getTwitterContent() {
-      $axios.post(APP_CONFIG.TWITTER_API_ENDPOINT).then(res => {
-        this.twitterContent = res.data;
-        this.filterByMember(null);
+      try {
+        const payload = { members: (this.members || []).map(m => (m.twitter || '').toLowerCase()).filter(Boolean) };
+        const res = await $axios.post(APP_CONFIG.TWITTER_API_ENDPOINT, payload);
+        this.twitterContent = Array.isArray(res.data) ? res.data : [];
+        // 先按企划过滤，再清除成员筛选
+        this.filterTweetsByCurrentProject();
+        this.selectedFilterMember = null;
         // 检查是否有未读推文
         this.checkUnreadTweets();
-      }).catch(err => {
+      } catch (err) {
         console.error('获取推文数据失败:', err);
-      });
+        this.twitterContent = [];
+        this.filteredTwitterContent = [];
+      }
     },
     
     
-    // 按成员筛选推文
+    // 基于当前企划过滤推文
+    filterTweetsByCurrentProject() {
+      const currentTwSet = new Set((this.members || []).map(m => (m.twitter || '').toLowerCase()));
+      this.filteredTwitterContent = (this.twitterContent || []).filter(t => currentTwSet.has((t.member || '').toLowerCase()));
+    },
+
+    // 按成员筛选推文（在当前企划集合内再筛选）
     filterByMember(memberName) {
       this.selectedFilterMember = memberName;
+      // 先限定为当前企划
+      this.filterTweetsByCurrentProject();
       if (memberName) {
-        const member = this.getMemberByName(memberName);
-        if (member) {
-          this.filteredTwitterContent = this.twitterContent.filter(tweet =>
-              tweet.member.toLowerCase() === member.twitter.toLowerCase()
-          );
+        const target = (this.members || []).find(m => m.name === memberName);
+        if (target && target.twitter) {
+          const tw = (target.twitter || '').toLowerCase();
+          this.filteredTwitterContent = this.filteredTwitterContent.filter(t => (t.member || '').toLowerCase() === tw);
         } else {
           this.filteredTwitterContent = [];
         }
-      } else {
-        this.filteredTwitterContent = this.twitterContent;
       }
+    },
+
+    // 获取成员 name 对应的 twitter（仅当前企划）
+    getTwitterByMemberName(memberName) {
+      const target = (this.members || []).find(m => m.name === memberName);
+      return target?.twitter || '';
     },
     
     // 切换成员筛选状态
@@ -678,6 +728,8 @@ export default {
     
     // 打开成员推文抽屉
     openMemberDrawer() {
+      // 打开前先按当前企划过滤一次
+      this.filterTweetsByCurrentProject();
       this.memberDrawerVisible = true;
       // 记录当前第一条推文ID（标记为已读）
       this.markTweetsAsRead();
@@ -689,13 +741,13 @@ export default {
         this.hasUnreadTweets = false;
         return;
       }
-      
+      // 获取当前企划的存储键
+      const key = this.getLastReadKey();
       // 获取当前第一条推文ID
       const currentFirstTweetId = this.twitterContent[0].id;
-      // 获取本地存储的最后已读推文ID
-      const lastReadTweetId = storage.get('lastReadTweetId');
-      
-      // 如果没有存储过推文ID（首次使用）或第一条推文ID与存储的不匹配，说明有未读推文
+      // 获取本地存储的最后已读推文ID（按企划）
+      const lastReadTweetId = storage.get(key);
+      // 如果没有存储过或第一条推文ID不同，则显示未读
       this.hasUnreadTweets = !lastReadTweetId || currentFirstTweetId !== lastReadTweetId;
     },
     
@@ -703,9 +755,14 @@ export default {
     markTweetsAsRead() {
       if (this.twitterContent.length > 0) {
         const firstTweetId = this.twitterContent[0].id;
-        storage.set('lastReadTweetId', firstTweetId);
+        storage.set(this.getLastReadKey(), firstTweetId);
         this.hasUnreadTweets = false;
       }
+    },
+
+    // 获取当前企划的已读存储键
+    getLastReadKey() {
+      return `lastReadTweetId:${this.currentProject}`;
     },
     
     // 处理工具栏点击
@@ -718,6 +775,10 @@ export default {
         // 点击Live，打开Live信息页面
         this.toolbarDialogVisible = false;
         this.liveDialogVisible = true;
+      } else if (item.id === 3 && item.title === '切换企划') {
+        // 点击切换企划 -> 打开企划选择弹窗
+        this.toolbarDialogVisible = false;
+        this.projectDialogVisible = true;
       } else {
         // TODO: 实现其他功能
       }
@@ -749,6 +810,11 @@ export default {
       this.liveDialogVisible = false;
       this.toolbarDialogVisible = true;
     },
+    // 回到工具箱（从企划弹窗）
+    goBackToToolbarFromProject() {
+      this.projectDialogVisible = false;
+      this.toolbarDialogVisible = true;
+    },
     
     
     
@@ -760,7 +826,7 @@ export default {
         } else if (this.bookmarkDialogVisible) {
           this.closeBookmarkDialog();
         } else if (this.addBookmarkDialogVisible) {
-          this.closeAddBookmarkDialog();
+        this.closeAddBookmarkDialog();
         } else if (this.liveDialogVisible) {
           this.closeLiveDialog();
         }
@@ -785,7 +851,7 @@ export default {
       this.showSakura = this.parseBooleanSetting(showSakura, APP_CONFIG.DEFAULTS.SHOW_SAKURA);
       if (this.showSakura) {
         this.enableSakura();
-      } else {
+                  } else {
         this.disableSakura();
       }
     },
@@ -816,7 +882,6 @@ export default {
 
     disableSakura() {
       try {
-        // 最简单高效：通过样式隐藏画布，避免任何闪烁或卡帧
         if (!document.getElementById('sakura-hide-style')) {
           const style = document.createElement('style');
           style.id = 'sakura-hide-style';
@@ -824,9 +889,62 @@ export default {
           document.head.appendChild(style);
         }
       } catch (e) { console.error('关闭樱花失败', e); }
+    },
+
+    // 获取当前企划的默认成员
+    getDefaultMember() {
+      return this.currentProject === 'gakumasu' ? gakumasuDefaultMembers : shinymasuDefaultMembers;
+    },
+
+    // 切换企划
+    switchProject() {
+      const newProject = this.currentProject === 'gakumasu' ? 'shinymasu' : 'gakumasu';
+      this.currentProject = newProject;
+      storage.set(APP_CONFIG.STORAGE_KEYS.CURRENT_PROJECT, newProject);
+      
+      // 更新成员和默认成员
+      const newDefaultMember = this.getDefaultMember();
+      this.selectMember = newDefaultMember;
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, newDefaultMember);
+      
+      // 更新主题样式
+      this.updateThemeStyles(newDefaultMember, this.members.find(m => m.name === newDefaultMember));
+      
+      // 强制更新组件
+      this.$forceUpdate();
+      // 切换完成后，重新拉取该企划推文
+      this.getTwitterContent();
+    },
+
+    // 关闭企划弹窗
+    closeProjectDialog() {
+      this.projectDialogVisible = false;
+    },
+    // 选择企划
+    chooseProject(project) {
+      if (project === this.currentProject) {
+        this.closeProjectDialog();
+        return; // 已是当前企划，不处理
+      }
+      this.currentProject = project;
+      storage.set(APP_CONFIG.STORAGE_KEYS.CURRENT_PROJECT, project);
+      const newDefaultMember = this.getDefaultMember();
+      this.selectMember = newDefaultMember;
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, newDefaultMember);
+      this.updateThemeStyles(newDefaultMember, this.members.find(m => m.name === newDefaultMember));
+      this.closeProjectDialog();
+      this.$forceUpdate();
+      // 切换完成后，重新拉取该企划推文
+      this.getTwitterContent();
     }
   },
   mounted() {
+    // 确保 selectMember 正确设置
+    if (!this.members.find(m => m.name === this.selectMember)) {
+      this.selectMember = this.getDefaultMember();
+      storage.set(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER, this.selectMember);
+    }
+    
     // 监听键盘事件
     window.addEventListener("keydown", this.keyDown);
     window.addEventListener("keydown", this.handleToolbarKeydown);
@@ -876,13 +994,13 @@ export default {
   },
   computed: {
     IMAGE_URL() {
-      return IMAGE_URL;
+      return this.currentProject === 'gakumasu' ? gakumasuImageUrl : shinymasuImageUrl;
     },
     HEAD_IMAGE_PREFIX() {
-      return HEAD_IMAGE_PREFIX;
+      return this.currentProject === 'gakumasu' ? gakumasuHeadImagePrefix : shinymasuHeadImagePrefix;
     },
     TITLE() {
-      return TITLE;
+      return this.currentProject === 'gakumasu' ? gakumasuTitle : shinymasuTitle;
     },
     // 暴露 APP_CONFIG 到模板
     APP_CONFIG() {
@@ -890,7 +1008,7 @@ export default {
     },
     // 成员列表
     members() {
-      return members;
+      return this.currentProject === 'gakumasu' ? gakumasuMembers : shinymasuMembers;
     },
     
     // 搜索引擎列表
@@ -905,7 +1023,29 @@ export default {
     
     // 主容器样式
     mainStyle() {
-      const bgImage = `/${IMAGE_URL}${this.members[this.selectMemberThemeIndex].name}.png`;
+      if (!this.members || this.members.length === 0) {
+        return {
+          backgroundImage: 'none',
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          height: '100vh',
+          width: '100vw',
+          margin: 0,
+          padding: 0,
+        };
+      }
+      
+      // 如果当前选择的成员不在列表中，使用默认成员
+      let memberIndex = this.selectMemberThemeIndex;
+      if (memberIndex === -1) {
+        const defaultMember = this.getDefaultMember();
+        memberIndex = this.members.findIndex(m => m.name === defaultMember);
+        if (memberIndex === -1) {
+          memberIndex = 0; // 使用第一个成员作为回退
+        }
+      }
+      
+      const bgImage = `/${this.IMAGE_URL}${this.members[memberIndex].name}.png`;
       return {
         backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
@@ -930,8 +1070,28 @@ export default {
         };
       }
       
+      // 安全检查：确保成员数据存在
+      if (!this.members || this.members.length === 0 || this.selectMemberThemeIndex === -1) {
+        return {
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 2px 20px rgba(0, 0, 0, 0.1)'
+        };
+      }
+      
       // 默认主题背景图时，使用成员主题色
-      const hex = this.members[this.selectMemberThemeIndex].color;
+      const member = this.members[this.selectMemberThemeIndex];
+      if (!member || !member.color) {
+        return {
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 2px 20px rgba(0, 0, 0, 0.1)'
+        };
+      }
+      
+      const hex = member.color;
       const { r, g, b } = this.hexToRgb(hex);
       // 根据颜色亮度调整透明度，深色用更高透明度，浅色用更低透明度
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
@@ -950,8 +1110,11 @@ export default {
     
     // 工具栏背景样式
     toolbarBackgroundStyle() {
+      if (!this.members || this.members.length === 0 || this.selectMemberThemeIndex === -1) {
+        return {};
+      }
       const member = this.members[this.selectMemberThemeIndex];
-      const bgImage = `/${IMAGE_URL}${member.name}.png`;
+      const bgImage = `/${this.IMAGE_URL}${member.name}.png`;
       
       return {
         backgroundImage: `url('${bgImage}')`,
@@ -963,8 +1126,11 @@ export default {
     
     // 书签背景样式
     bookmarkBackgroundStyle() {
+      if (!this.members || this.members.length === 0 || this.selectMemberThemeIndex === -1) {
+        return {};
+      }
       const member = this.members[this.selectMemberThemeIndex];
-      const bgImage = `/${IMAGE_URL}${member.name}.png`;
+      const bgImage = `/${this.IMAGE_URL}${member.name}.png`;
       
       return {
         backgroundImage: `url('${bgImage}')`,
@@ -976,8 +1142,11 @@ export default {
     
     // Live背景样式
     liveBackgroundStyle() {
+      if (!this.members || this.members.length === 0 || this.selectMemberThemeIndex === -1) {
+        return {};
+      }
       const member = this.members[this.selectMemberThemeIndex];
-      const bgImage = `/${IMAGE_URL}${member.name}.png`;
+      const bgImage = `/${this.IMAGE_URL}${member.name}.png`;
       
       return {
         backgroundImage: `url('${bgImage}')`,
@@ -986,12 +1155,14 @@ export default {
         backgroundRepeat: 'no-repeat'
       };
     },
-
+    
   }
 };
 </script>
 <!--*****************************************************************************************************************-->
 <style scoped>
+
+/* 恢复为默认导航样式，无额外自定义容器 */
 
 ::v-deep(.el-menu--horizontal) {
   border-bottom: none !important;
@@ -999,6 +1170,7 @@ export default {
   padding: 0 20px;
   height: 70px;
   transition: all 0.3s ease;
+  /* 容器交给 .nav-scroll 控制滚动，不再显示菜单本身滚动条 */
 }
 
 ::v-deep(.el-menu-item) {
@@ -1014,6 +1186,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto; /* 防止菜单项换行，配合横向滚动 */
 }
 
 ::v-deep(.el-menu-item:hover) {
@@ -1817,5 +1990,20 @@ html, body, #app {  /*清除自带外边框*/
   height: 24px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
+
+/* 企划选择弹窗样式（与其它模态一致的毛玻璃风格，尺寸更大） */
+.project-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px) saturate(1.5); -webkit-backdrop-filter: blur(12px) saturate(1.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.project-modal-content { width: 75vw; height: 70vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.project-modal-content::before { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 1; border-radius: 16px; pointer-events: none; }
+.project-header { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); border-bottom: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); padding: 20px 24px; display: flex; align-items: center; justify-content: center; border-radius: 16px 16px 0 0; position: relative; z-index: 2; color: #fff; font-weight: 600; }
+.project-back-btn { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; cursor: pointer; transition: all 0.3s ease; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; z-index: 3; }
+.project-back-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-50%) scale(1.08); }
+.project-back-btn .back-icon { width: 20px; height: 20px; filter: brightness(0) invert(1); }
+.project-grid { flex: 1; position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); }
+.project-item { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.project-item:hover { transform: translateY(-3px) scale(1.02); background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8); border-color: rgba(255, 255, 255, 0.5); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25), 0 0 20px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.project-item.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset; }
+.project-logo { width: 260px; height: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25)); }
+.project-name { margin-top: 12px; color: #fff; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.45); font-size: 16px; }
 
 </style>

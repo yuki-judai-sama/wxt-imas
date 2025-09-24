@@ -64,7 +64,7 @@
     <div class="footer">
       <el-divider />
       <div class="footer-content">
-        <span class="copyright">©学マス</span>
+        <span class="copyright">©アイマス</span>
         <span class="copyright">Version 1.0.0</span>
       </div>
     </div>
@@ -73,20 +73,28 @@
 
 <script>
 import { APP_CONFIG } from '/src/utils/appConfig.js'
-import { members, DEFAULT_MEMBERS, IMAGE_URL, HEAD_IMAGE_PREFIX } from '/src/utils/gakumasuConfig.js'
+import { members as gakumasuMembers, DEFAULT_MEMBERS as gakumasuDefaultMembers, IMAGE_URL as gakumasuImageUrl, HEAD_IMAGE_PREFIX as gakumasuHeadImagePrefix } from '/src/utils/gakumasuConfig.js'
+import { members as shinymasuMembers, DEFAULT_MEMBERS as shinymasuDefaultMembers, IMAGE_URL as shinymasuImageUrl, HEAD_IMAGE_PREFIX as shinymasuHeadImagePrefix } from '/src/utils/shinymasuConfig.js'
 import { hexToRgb, toRgba, getMemberDisplayName, storage, notifyNewTab } from '/src/utils/util.js'
 
 export default {
   name: "PopPlugin",
   data() {
     return {
-      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || DEFAULT_MEMBERS
+      // 当前企划
+      currentProject: storage.get(APP_CONFIG.STORAGE_KEYS.CURRENT_PROJECT) || APP_CONFIG.DEFAULTS.CURRENT_PROJECT,
+      selectedMember: storage.get(APP_CONFIG.STORAGE_KEYS.DEFAULT_MEMBER) || this.getDefaultMember()
     };
   },
   methods: {
     hexToRgb,
     toRgba,
     getMemberDisplayName,
+    
+    // 获取当前企划的默认成员
+    getDefaultMember() {
+      return this.currentProject === 'gakumasu' ? gakumasuDefaultMembers : shinymasuDefaultMembers;
+    },
     
     // 切换成员主题
     changeMemberTheme(memberName) {
@@ -125,29 +133,29 @@ export default {
   },
   mounted() {
     // 确保选中的成员在列表中
-    if (!members.find(m => m.name === this.selectedMember)) {
-      this.selectedMember = DEFAULT_MEMBERS;
+    if (!this.members.find(m => m.name === this.selectedMember)) {
+      this.selectedMember = this.getDefaultMember();
     }
   },
   computed: {
     IMAGE_URL() {
-      return IMAGE_URL;
+      return this.currentProject === 'gakumasu' ? gakumasuImageUrl : shinymasuImageUrl;
     },
     HEAD_IMAGE_PREFIX() {
-      return HEAD_IMAGE_PREFIX;
+      return this.currentProject === 'gakumasu' ? gakumasuHeadImagePrefix : shinymasuHeadImagePrefix;
     },
     members() {
-      return members;
+      return this.currentProject === 'gakumasu' ? gakumasuMembers : shinymasuMembers;
     },
     
     currentMemberTheme() {
-      const member = members.find(m => m.name === this.selectedMember);
+      const member = this.members.find(m => m.name === this.selectedMember);
       if (!member) return { color: '#667eea', bgImage: '' };
       
       const { r, g, b } = this.hexToRgb(member.color);
       return {
         color: `rgb(${r}, ${g}, ${b})`,
-        bgImage: `/${IMAGE_URL}${member.name}.png`
+        bgImage: `/${this.IMAGE_URL}${member.name}.png`
       };
     },
     
@@ -205,13 +213,7 @@ export default {
 
 
 /* 内容区域 */
-.content {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
 
 /* 当前主题预览区域 */
 .current-theme-section {
@@ -271,12 +273,9 @@ export default {
 
 
 
-.member-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  justify-items: stretch;
-}
+.member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; justify-items: stretch; max-height: 330px; overflow: auto; padding-right: 4px; }
+.member-grid::-webkit-scrollbar { width: 6px; }
+.member-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 6px; }
 
 .member-item {
   display: flex;

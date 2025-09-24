@@ -89,6 +89,11 @@
         </div>
 
         <div class="setting-item">
+          <label class="setting-label">显示工具箱</label>
+          <el-switch v-model="showToolbarButton" @change="handleToolbarButtonChange" />
+        </div>
+
+        <div class="setting-item">
           <label class="setting-label">樱花飘落</label>
           <el-switch v-model="showSakura" @change="handleSakuraChange" />
         </div>
@@ -215,6 +220,7 @@ export default {
       showSearchBox: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SEARCH_BOX), APP_CONFIG.DEFAULTS.SHOW_SEARCH_BOX),
       searchBoxSize: storage.get(APP_CONFIG.STORAGE_KEYS.SEARCH_BOX_SIZE) || APP_CONFIG.DEFAULTS.SEARCH_BOX_SIZE,
       showBottomBookmarkBar: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_BOTTOM_BOOKMARK_BAR), APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR),
+      showToolbarButton: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TOOLBAR_BUTTON), APP_CONFIG.DEFAULTS.SHOW_TOOLBAR_BUTTON),
       showSakura: this.parseBooleanSetting(storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_SAKURA), APP_CONFIG.DEFAULTS.SHOW_SAKURA)
     };
   },
@@ -270,6 +276,14 @@ export default {
       // 立即通知新标签页
       notifyNewTab('SETTINGS_CHANGE', { 
         showBottomBookmarkBar: value
+      });
+    },
+
+    // 处理工具箱按钮显示变更
+    handleToolbarButtonChange(value) {
+      storage.set(APP_CONFIG.STORAGE_KEYS.SHOW_TOOLBAR_BUTTON, value);
+      notifyNewTab('SETTINGS_CHANGE', {
+        showToolbarButton: value
       });
     },
 
@@ -376,8 +390,9 @@ export default {
         showTimeDisplay: this.showTimeDisplay,
         showSearchBox: this.showSearchBox,
         searchBoxSize: this.searchBoxSize,
-      showBottomBookmarkBar: this.showBottomBookmarkBar,
-      showSakura: this.showSakura
+        showBottomBookmarkBar: this.showBottomBookmarkBar,
+        showToolbarButton: this.showToolbarButton,
+        showSakura: this.showSakura
       });
     },
     

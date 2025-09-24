@@ -275,7 +275,7 @@
           <div class="gallery-body">
             <div class="gallery-actions">
               <el-button size="small" type="primary" plain @click.stop="chooseGalleryFolder">{{ galleryDirHandle ? '重新选择' : '选择文件夹' }}</el-button>
-            </div>
+          </div>
             <div v-if="localGalleryImages.length > 0" class="gallery-grid">
               <div v-if="localGalleryBgUrl" class="gallery-item gallery-current-tile" @click="cancelLocalGalleryBackground" :title="'取消设为背景'">
                 <img :src="localGalleryBgUrl" class="gallery-image" draggable="false" />
@@ -283,7 +283,7 @@
               </div>
               <div v-for="(img, idx) in localGalleryImages" :key="img.id || idx" class="gallery-item" @click="setLocalGalleryBackground(img)" :title="'设为背景图'">
                 <img :src="img.url || img" class="gallery-image" draggable="false" />
-          </div>
+                </div>
               </div>
             <div v-else class="gallery-empty">未发现图片，请点击上方"选择文件夹"导入本地图片。</div>
         </div>
@@ -701,6 +701,13 @@ export default {
     handleBottomBookmarkBarChange(showBottomBookmarkBar) {
       this.showBottomBookmarkBar = this.parseBooleanSetting(showBottomBookmarkBar, APP_CONFIG.DEFAULTS.SHOW_BOTTOM_BOOKMARK_BAR);
     },
+
+    // 处理工具箱按钮显示变更
+    handleToolbarButtonChange(showToolbarButton) {
+      const val = this.parseBooleanSetting(showToolbarButton, APP_CONFIG.DEFAULTS.SHOW_TOOLBAR_BUTTON);
+      const btn = document.querySelector('.toolbar-button');
+      if (btn) btn.style.display = val ? 'flex' : 'none';
+    },
     
     // 处理设置变更（统一入口）
     handleSettingsChange(data) {
@@ -723,6 +730,9 @@ export default {
       }
       if (data.showBottomBookmarkBar !== undefined) {
         this.handleBottomBookmarkBarChange(data.showBottomBookmarkBar);
+      }
+      if (data.showToolbarButton !== undefined) {
+        this.handleToolbarButtonChange(data.showToolbarButton);
       }
       if (data.showSakura !== undefined) {
         this.handleSakuraChange(data.showSakura);
@@ -1148,6 +1158,12 @@ export default {
         } catch (_) {}
       }
     });
+    // 初始化工具箱按钮的显示状态
+    const showToolbar = this.parseBooleanSetting(
+      storage.get(APP_CONFIG.STORAGE_KEYS.SHOW_TOOLBAR_BUTTON),
+      APP_CONFIG.DEFAULTS.SHOW_TOOLBAR_BUTTON
+    );
+    this.handleToolbarButtonChange(showToolbar);
     // 首次渲染时加载本地图库背景并应用优先级
     this.localGalleryBgUrl = storage.get(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL) || null;
     this.updateCustomBackground();

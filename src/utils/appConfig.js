@@ -17,6 +17,7 @@ export const APP_CONFIG = {
     SHOW_SEARCH_BOX: 'showSearchBox',
     SEARCH_BOX_SIZE: 'searchBoxSize',
     SHOW_BOTTOM_BOOKMARK_BAR: 'showBottomBookmarkBar',
+    SHOW_TOOLBAR_BUTTON: 'showToolbarButton',
     SHOW_SAKURA: 'showSakura',
     CURRENT_PROJECT: 'currentProject'
   },
@@ -37,6 +38,7 @@ export const APP_CONFIG = {
     SHOW_SEARCH_BOX: true,
     SEARCH_BOX_SIZE: 'small',
     SHOW_BOTTOM_BOOKMARK_BAR: true,
+    SHOW_TOOLBAR_BUTTON: true,
     SHOW_SAKURA: true,
     CURRENT_PROJECT: 'gakumasu'
   }

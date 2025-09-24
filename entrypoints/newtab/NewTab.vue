@@ -262,6 +262,24 @@
       @back="goBackToToolbarFromLive"
     />
 
+    <!-- 版本更新信息模态框（与其他模态一致的毛玻璃风格） -->
+    <div v-if="versionDialogVisible" class="gallery-modal" @click="closeVersionModal">
+      <div class="gallery-modal-content" :style="toolbarBackgroundStyle" @click.stop>
+        <div class="gallery-header">
+          <button class="gallery-back-btn" @click.stop="() => { closeVersionModal(); toolbarDialogVisible = true; }" title="回到工具箱">
+            <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
+          </button>
+          <h2 class="gallery-title-header">版本更新信息</h2>
+          <button class="gallery-close-btn" @click="closeVersionModal">×</button>
+        </div>
+        <div class="version-body">
+          <div class="version-card">
+            <pre class="version-pre">{{ versionText }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
       <!-- 本地图库模态框（与其它模态一致的毛玻璃风格） -->
       <div v-if="localGalleryDialogVisible" class="gallery-modal" @click="closeLocalGalleryDialog">
         <div class="gallery-modal-content" :style="toolbarBackgroundStyle" @click.stop>
@@ -365,6 +383,10 @@ export default {
       galleryObjectUrls: [],
       galleryDb: null,
       galleryDirHandle: null,
+      // 版本更新信息
+      versionDialogVisible: false,
+      versionText: '',
+      versionInfo: null,
       // 企划选择弹窗
       projectDialogVisible: false,
       toolbarItems: [
@@ -372,7 +394,7 @@ export default {
         { id: 2, title: 'イベント·ライブ', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png' },
         { id: 3, title: '切换企划', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'changeProject.png' },
         { id: 4, title: '本地图库', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'gallery.png' },
-        { id: 5, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 5, title: '版本更新信息', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'versionUpdate.png' },
         { id: 6, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
         { id: 7, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
         { id: 8, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
@@ -841,9 +863,34 @@ export default {
         // 点击切换企划 -> 打开企划选择弹窗
         this.toolbarDialogVisible = false;
         this.projectDialogVisible = true;
+      } else if (item.id === 5 && item.title === '版本更新信息') {
+        // 打开版本更新信息
+        this.toolbarDialogVisible = false;
+        this.openVersionModal();
       } else {
         // TODO: 实现其他功能
       }
+    },
+    async fetchVersionUpdate() {
+      try {
+        const res = await $axios.get(APP_CONFIG.VERSION_UPDATE_ENDPOINT);
+        if (res && res.data) {
+          this.versionInfo = res.data;
+          this.versionText = res.data.exists ? (res.data.content || '') : (res.data.message || '未找到版本更新信息');
+        } else {
+          this.versionText = '未获取到版本更新信息';
+        }
+      } catch (e) {
+        this.versionText = '获取版本更新信息失败';
+      }
+    },
+    openVersionModal() {
+      this.versionDialogVisible = true;
+      this.versionText = '加载中...';
+      this.fetchVersionUpdate();
+    },
+    closeVersionModal() {
+      this.versionDialogVisible = false;
     },
     // 关闭本地图库
     closeLocalGalleryDialog() {
@@ -2239,5 +2286,11 @@ html, body, #app {  /*清除自带外边框*/
 .gallery-body { flex: 1; padding: 20px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); overflow: hidden; position: relative; z-index: 2; }
 .gallery-body .gallery-grid { max-height: 100%; overflow: auto; }
 .gallery-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+
+/* 版本更新信息排版 */
+.version-body { flex: 1; padding: 24px; overflow: auto; color: #fff; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); }
+.version-card { max-width: 920px; margin: 0 auto; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; padding: 20px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25); }
+.version-pre { white-space: pre-wrap; line-height: 1.8; font-size: 14px; letter-spacing: 0.2px; color: #f5f7ff; text-shadow: 0 1px 2px rgba(0,0,0,0.35); margin: 0; }
+.version-pre::selection { background: rgba(255,255,255,0.2); }
 
 </style>

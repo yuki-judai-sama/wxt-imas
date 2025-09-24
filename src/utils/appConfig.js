@@ -4,9 +4,10 @@ export const APP_CONFIG = {
   VERSION: '1.1.0',
   CONTACT_EMAIL: 'yukijudai.sky@qq.com',
   // API配置
-  API_BASE_URL: 'http://127.0.0.1:8115',
+  API_BASE_URL: 'http://103.109.23.45:8115',
   TWITTER_API_ENDPOINT: '/TwitterController/getTwitterContent',
   ASOBI_TICKET_BOOTS: '/AsobiTicketController/getLiveInfoList',
+  VERSION_UPDATE_ENDPOINT: '/VersionUpdateController/getVersionUpdateInfo',
   // 存储键名
   STORAGE_KEYS: {
     DEFAULT_MEMBER: 'defaultMember',

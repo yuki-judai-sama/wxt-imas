@@ -14,14 +14,14 @@
       <!-- 中间可滚动成员区域 -->
       <div class="nav-scroll" ref="navScroll" @wheel.prevent="onNavWheel">
         <div class="nav-members">
-          <el-menu-item
-              v-for="(member, index) in members"
-              :key="member.name"
-              :index="String(index + 1)"
-              @click="openMemberLink(index + 1)"
-          >
+      <el-menu-item
+          v-for="(member, index) in members"
+          :key="member.name"
+          :index="String(index + 1)"
+          @click="openMemberLink(index + 1)"
+      >
             <el-avatar :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`" @dragstart.prevent/>
-          </el-menu-item>
+      </el-menu-item>
         </div>
       </div>
 
@@ -231,18 +231,18 @@
           <button class="project-back-btn" @click.stop="goBackToToolbarFromProject" title="返回工具箱">
             <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
           </button>
-        </div>
+                  </div>
         <div class="project-grid">
           <div class="project-item" :class="{ active: currentProject==='gakumasu' }" @click="chooseProject('gakumasu')">
             <img :src="'/gakumasu/学マス-logo.png'" alt="学マス" class="project-logo" draggable="false" />
-          </div>
+                </div>
           <div class="project-item" :class="{ active: currentProject==='shinymasu' }" @click="chooseProject('shinymasu')">
             <img :src="'/shinymasu/シャニマス-logo.png'" alt="シャニマス" class="project-logo" draggable="false" />
-          </div>
-        </div>
-      </div>
-    </div>
-    
+              </div>
+            </div>
+              </div>
+            </div>
+            
     <!-- 书签管理模态框（组件） -->
     <BookmarkManager
       :visible="bookmarkDialogVisible"
@@ -261,6 +261,34 @@
       @close="closeLiveDialog"
       @back="goBackToToolbarFromLive"
     />
+
+      <!-- 本地图库模态框（与其它模态一致的毛玻璃风格） -->
+      <div v-if="localGalleryDialogVisible" class="gallery-modal" @click="closeLocalGalleryDialog">
+        <div class="gallery-modal-content" :style="toolbarBackgroundStyle" @click.stop>
+          <div class="gallery-header">
+            <button class="gallery-back-btn" @click.stop="goBackToToolbarFromGallery" title="回到工具箱">
+              <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
+          </button>
+            <h2 class="gallery-title-header">本地图库</h2>
+            <button class="gallery-close-btn" @click="closeLocalGalleryDialog">×</button>
+        </div>
+          <div class="gallery-body">
+            <div class="gallery-actions">
+              <el-button size="small" type="primary" plain @click.stop="chooseGalleryFolder">{{ galleryDirHandle ? '重新选择' : '选择文件夹' }}</el-button>
+            </div>
+            <div v-if="localGalleryImages.length > 0" class="gallery-grid">
+              <div v-if="localGalleryBgUrl" class="gallery-item gallery-current-tile" @click="cancelLocalGalleryBackground" :title="'取消设为背景'">
+                <img :src="localGalleryBgUrl" class="gallery-image" draggable="false" />
+                <div class="gallery-badge">当前设置本地背景图</div>
+              </div>
+              <div v-for="(img, idx) in localGalleryImages" :key="img.id || idx" class="gallery-item" @click="setLocalGalleryBackground(img)" :title="'设为背景图'">
+                <img :src="img.url || img" class="gallery-image" draggable="false" />
+          </div>
+              </div>
+            <div v-else class="gallery-empty">未发现图片，请点击上方"选择文件夹"导入本地图片。</div>
+        </div>
+      </div>
+    </div>
     
     <!-- 底部横向书签栏（组件） -->
     <BottomBookmarkBar
@@ -313,6 +341,7 @@ export default {
       imageLoadErrors: {},
       settingsListener: null,
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
+      localGalleryBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL) || null,
       hasUnreadTweets: false, // 是否有未读推文
       
       // 界面显示控制
@@ -330,13 +359,19 @@ export default {
       bookmarks: [], // 存储用户的书签
       // Live信息相关
       liveDialogVisible: false,
+      // 本地图库相关
+      localGalleryDialogVisible: false,
+      localGalleryImages: [],
+      galleryObjectUrls: [],
+      galleryDb: null,
+      galleryDirHandle: null,
       // 企划选择弹窗
       projectDialogVisible: false,
       toolbarItems: [
         { id: 1, title: '书签', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'collect.png' },
         { id: 2, title: 'イベント·ライブ', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'Live.png' },
         { id: 3, title: '切换企划', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'changeProject.png' },
-        { id: 4, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
+        { id: 4, title: '本地图库', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'gallery.png' },
         { id: 5, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
         { id: 6, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
         { id: 7, title: '機能追加予定', icon: APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'pending.png' },
@@ -608,9 +643,10 @@ export default {
     updateCustomBackground() {
       const mainElement = document.querySelector('.mainStyle');
       if (mainElement) {
-        if (this.customBgUrl) {
+        const priorityUrl = this.localGalleryBgUrl || this.customBgUrl;
+        if (priorityUrl) {
           // 添加自定义背景图作为覆盖层
-          mainElement.style.setProperty('--custom-bg', `url('${this.customBgUrl}')`);
+          mainElement.style.setProperty('--custom-bg', `url('${priorityUrl}')`);
           mainElement.classList.add('has-custom-bg');
         } else {
           // 移除自定义背景图
@@ -784,12 +820,139 @@ export default {
         // 点击Live，打开Live信息页面
         this.toolbarDialogVisible = false;
         this.liveDialogVisible = true;
+      } else if (item.id === 4 && item.title === '本地图库') {
+        // 打开本地图库
+        this.toolbarDialogVisible = false;
+        if (!this.localGalleryImages.length) {
+          this.loadLocalGallery();
+        }
+        this.localGalleryDialogVisible = true;
       } else if (item.id === 3 && item.title === '切换企划') {
         // 点击切换企划 -> 打开企划选择弹窗
         this.toolbarDialogVisible = false;
         this.projectDialogVisible = true;
       } else {
         // TODO: 实现其他功能
+      }
+    },
+    // 关闭本地图库
+    closeLocalGalleryDialog() {
+      this.localGalleryDialogVisible = false;
+    },
+    // 从本地图库返回工具箱
+    goBackToToolbarFromGallery() {
+      this.localGalleryDialogVisible = false;
+      this.toolbarDialogVisible = true;
+    },
+    // 读取本地图库静态图片（构建内置）或持久目录
+    async loadLocalGallery() {
+      try {
+        if (this.galleryDirHandle) {
+          await this.loadFromDirectoryHandle(this.galleryDirHandle);
+          return;
+        }
+        const saved = await this.getSavedGalleryDirHandle();
+        if (saved) {
+          try {
+            const perm = await saved.queryPermission?.({ mode: 'read' });
+            if (perm !== 'granted') await saved.requestPermission?.({ mode: 'read' });
+            this.galleryDirHandle = saved;
+            await this.loadFromDirectoryHandle(saved);
+          } catch (_) {
+            this.localGalleryImages = [];
+          }
+        } else {
+          this.localGalleryImages = [];
+        }
+      } catch (e) {
+        console.error('读取本地图库失败', e);
+        this.localGalleryImages = [];
+      }
+    },
+    async chooseGalleryFolder() {
+      try {
+        const handle = await window.showDirectoryPicker({ id: 'imasGallery', mode: 'read' });
+        this.galleryDirHandle = handle;
+        await this.saveGalleryDirHandle(handle);
+        await this.loadFromDirectoryHandle(handle);
+      } catch (e) { /* 用户取消 */ }
+    },
+    async rechooseGalleryFolder() {
+      await this.chooseGalleryFolder();
+    },
+    async loadFromDirectoryHandle(dirHandle) {
+      // 清理旧URL
+      this.galleryObjectUrls.forEach(u => URL.revokeObjectURL(u));
+      this.galleryObjectUrls = [];
+      const images = [];
+      try {
+        for await (const [name, entry] of dirHandle.entries()) {
+          if (entry.kind === 'file' && /\.(png|jpe?g|gif|webp)$/i.test(name)) {
+            try {
+              const file = await entry.getFile();
+              const url = URL.createObjectURL(file);
+              this.galleryObjectUrls.push(url);
+              images.push({ id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : (name + '_' + file.lastModified), name, handle: entry, url });
+            } catch (_) {}
+          }
+        }
+      } catch (e) {
+        console.error('读取目录失败', e);
+      }
+      this.localGalleryImages = images;
+    },
+    // IndexedDB: 保存/读取目录句柄
+    async openGalleryDB() {
+      if (this.galleryDb) return this.galleryDb;
+      this.galleryDb = await new Promise((resolve, reject) => {
+        const req = indexedDB.open('imas-gallery', 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('config')) db.createObjectStore('config');
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return this.galleryDb;
+    },
+    async saveGalleryDirHandle(handle) {
+      const db = await this.openGalleryDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('config', 'readwrite');
+        tx.objectStore('config').put(handle, 'directoryHandle');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+    async getSavedGalleryDirHandle() {
+      const db = await this.openGalleryDB();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction('config', 'readonly');
+        const req = tx.objectStore('config').get('directoryHandle');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    },
+    // 设置本地图库图片为背景图
+    setLocalGalleryBackground(img) {
+      const url = typeof img === 'string' ? img : (img && img.url);
+      if (!url) return;
+      try {
+        storage.set(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL, url);
+        this.localGalleryBgUrl = url;
+        this.updateCustomBackground();
+      } catch (e) {
+        console.error('设置本地图库背景失败', e);
+      }
+    },
+    // 取消使用本地图库背景
+    cancelLocalGalleryBackground() {
+      try {
+        storage.remove(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL);
+        this.localGalleryBgUrl = null;
+        this.updateCustomBackground();
+      } catch (e) {
+        console.error('取消本地图库背景失败', e);
       }
     },
     
@@ -973,12 +1136,22 @@ export default {
     this.startTimeUpdate();
     }
     // 根据设置启用/禁用樱花
-    if (this.showSakura) {
-      this.enableSakura();
-    } else {
-      this.disableSakura();
-    }
-    
+    if (this.showSakura) { this.enableSakura(); } else { this.disableSakura(); }
+    // 尝试恢复已保存的本地目录句柄
+    this.getSavedGalleryDirHandle().then(async (handle) => {
+      if (handle) {
+        try {
+          const perm = await handle.queryPermission?.({ mode: 'read' });
+          if (perm !== 'granted') await handle.requestPermission?.({ mode: 'read' });
+          this.galleryDirHandle = handle;
+          await this.loadFromDirectoryHandle(handle);
+        } catch (_) {}
+      }
+    });
+    // 首次渲染时加载本地图库背景并应用优先级
+    this.localGalleryBgUrl = storage.get(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL) || null;
+    this.updateCustomBackground();
+
   },
   
   beforeUnmount() {
@@ -2019,5 +2192,36 @@ html, body, #app {  /*清除自带外边框*/
 .project-item.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset; }
 .project-logo { width: 260px; height: auto; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25)); }
 .project-name { margin-top: 12px; color: #fff; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.45); font-size: 16px; }
+
+/* 本地图库样式 */
+.gallery-header { font-weight: 600; font-size: 18px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; max-height: 100%; overflow: auto; padding-right: 8px; }
+.gallery-item { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px; background: rgba(255,255,255,0.12); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.gallery-image { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; background: rgba(255,255,255,0.05); transition: transform .25s ease, filter .25s ease; }
+.gallery-item::after { content: '点击设为背景'; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.45); color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 10px; opacity: 0; transition: opacity .2s ease; pointer-events: none; }
+.gallery-current-tile::after { content: '取消设为背景'; }
+.gallery-item:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+.gallery-item:hover .gallery-image { transform: scale(1.03); filter: saturate(1.1); }
+.gallery-item:hover::after { opacity: 1; }
+
+/* 当前背景图角标 */
+.gallery-current-tile { position: relative; }
+.gallery-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.55); color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 8px; }
+.gallery-empty { padding: 32px; color: #fff; font-weight: 800; text-align: center; font-size: 18px; letter-spacing: 0.5px; }
+
+/* 本地图库弹窗毛玻璃风格（与其他模态保持一致） */
+.gallery-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px) saturate(1.5); -webkit-backdrop-filter: blur(12px) saturate(1.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.gallery-modal-content { width: 85vw; height: 85vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.gallery-modal-content::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); z-index: 1; border-radius: 16px; }
+.gallery-header { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); border-bottom: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-radius: 16px 16px 0 0; position: relative; z-index: 2; }
+.gallery-title-header { color: #fff; font-weight: 600; font-size: 18px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); margin: 0; flex: 1; text-align: center; }
+.gallery-back-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; cursor: pointer; transition: all 0.3s ease; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-right: 12px; z-index: 10; position: relative; }
+.gallery-back-btn .back-icon { width: 20px; height: 20px; filter: brightness(0) invert(1); display: block; }
+.gallery-back-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.1); }
+.gallery-close-btn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; transition: all 0.3s ease; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.gallery-close-btn:hover { background: rgba(255, 255, 255, 0.1); transform: scale(1.1); }
+.gallery-body { flex: 1; padding: 20px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); overflow: hidden; position: relative; z-index: 2; }
+.gallery-body .gallery-grid { max-height: 100%; overflow: auto; }
+.gallery-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 
 </style>

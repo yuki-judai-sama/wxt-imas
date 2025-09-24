@@ -26,8 +26,8 @@ export const members = [
     { memberName: '七草 にちか', name: 'NanakusaNichika', color: 'a6ceb6', link: 'https://x.com/azusa_shizuki', twitter: 'azusa_shizuki' },
     { memberName: '緋田 美琴', name: 'AketaMikoto', color: '760F10', link: 'https://x.com/ayaMiNTgreen', twitter: 'ayaMiNTgreen' },
     { memberName: '斑鳩 ルカ', name: 'LucaIkaruga', color: '24130D', link: 'https://x.com/nari_milktea', twitter: 'nari_milktea' },
-    { memberName: '鈴木 羽那', name: 'HanaSuzuki', color: 'E0B5D3', link: 'https://x.com/okasakimiho_PR', twitter: 'okasakimiho_PR' },
-    { memberName: '郁田 はるき', name: 'HarukiIkuta', color: 'EAD7A4', link: 'https://x.com/okasakimiho_PR', twitter: 'okasakimiho_PR' },
+    { memberName: '鈴木 羽那', name: 'HanaSuzuki', color: 'E0B5D3', link: 'https://x.com/miiikawa_haruna', twitter: 'miiikawa_haruna' },
+    { memberName: '郁田 はるき', name: 'HarukiIkuta', color: 'EAD7A4', link: 'https://x.com/ozawa_rena', twitter: 'ozawa_rena' },
 ];
 export const DEFAULT_MEMBERS= 'AsakuraTooru';
 export const IMAGE_URL = 'shinymasu/';

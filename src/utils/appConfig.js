@@ -1,7 +1,7 @@
 /*************************************应用配置常量******************************************/
 export const APP_CONFIG = {
   // 应用信息
-  VERSION: '1.0.0',
+  VERSION: '1.1.0',
   CONTACT_EMAIL: 'yukijudai.sky@qq.com',
   // API配置
   API_BASE_URL: 'http://127.0.0.1:8115',

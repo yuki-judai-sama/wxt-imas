@@ -65,7 +65,7 @@
       <el-divider />
       <div class="footer-content">
         <span class="copyright">©アイマス</span>
-        <span class="copyright">Version 1.0.0</span>
+        <span class="copyright">Version 1.1.0</span>
       </div>
     </div>
   </div>

@@ -213,7 +213,7 @@ export default {
 
 
 /* 内容区域 */
-.content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+.content { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow: visible; }
 
 /* 当前主题预览区域 */
 .current-theme-section {
@@ -267,13 +267,11 @@ export default {
 }
 
 /* 成员选择器区域 */
-.member-selector {
-  margin-bottom: 8px;
-}
+.member-selector { margin-bottom: 8px; padding-top: 6px; }
 
 
 
-.member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; justify-items: stretch; max-height: 330px; overflow: auto; padding-right: 4px; }
+.member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; justify-items: stretch; max-height: 330px; overflow: auto; padding-right: 4px; padding-top: 6px; }
 .member-grid::-webkit-scrollbar { width: 6px; }
 .member-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 6px; }
 
@@ -296,10 +294,7 @@ export default {
   width: 100%;
 }
 
-.member-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
+.member-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
 
 .member-item.active {
   transform: translateY(-2px);

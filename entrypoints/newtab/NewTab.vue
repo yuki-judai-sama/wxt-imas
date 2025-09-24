@@ -1,8 +1,8 @@
 <template>
   <div class="mainStyle" :style="mainStyle">
-    <!-- 顶部导航栏 -->
+    <!-- 顶部导航栏（左Logo/右按钮固定，中间可滚动） -->
     <el-menu mode="horizontal" :style="menuStyle" :ellipsis="false">
-      <!-- 官方Logo -->
+      <!-- 官方Logo（固定） -->
       <el-menu-item index="logo" @click="openMemberLink(0)">
         <img
             style="max-height: 100%; height: auto; width: auto;"
@@ -10,20 +10,25 @@
             draggable="false"
         />
       </el-menu-item>
-      <!-- 成员头像列表 -->
-      <el-menu-item
-          v-for="(member, index) in members"
-          :key="member.name"
-          :index="String(index + 1)"
-          @click="openMemberLink(index + 1)"
-      >
-        <el-avatar :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`" @dragstart.prevent/>
-      </el-menu-item>
-      <!-- 成员动态按钮 -->
+
+      <!-- 中间可滚动成员区域 -->
+      <div class="nav-scroll" ref="navScroll" @wheel.prevent="onNavWheel">
+        <div class="nav-members">
+          <el-menu-item
+              v-for="(member, index) in members"
+              :key="member.name"
+              :index="String(index + 1)"
+              @click="openMemberLink(index + 1)"
+          >
+            <el-avatar :src="`/${IMAGE_URL}${HEAD_IMAGE_PREFIX}${member.name}.png`" @dragstart.prevent/>
+          </el-menu-item>
+        </div>
+      </div>
+
+      <!-- 成员动态按钮（固定） -->
       <el-menu-item index="memberTwitterContent" style="margin-left: auto" @click="openMemberDrawer">
         <el-button type="primary" plain round>
           成员动态
-          <!-- 未读推文红点提醒 -->
           <span v-if="hasUnreadTweets" class="unread-badge"></span>
         </el-button>
       </el-menu-item>
@@ -226,16 +231,13 @@
           <button class="project-back-btn" @click.stop="goBackToToolbarFromProject" title="返回工具箱">
             <img :src="APP_CONFIG.DEFAULTS.UTILS_IMAGE_URL+'back.png'" alt="返回" class="back-icon" draggable="false" />
           </button>
-          选择企划
         </div>
         <div class="project-grid">
           <div class="project-item" :class="{ active: currentProject==='gakumasu' }" @click="chooseProject('gakumasu')">
             <img :src="'/gakumasu/学マス-logo.png'" alt="学マス" class="project-logo" draggable="false" />
-            <div class="project-name">学マス</div>
-              </div>
+          </div>
           <div class="project-item" :class="{ active: currentProject==='shinymasu' }" @click="chooseProject('shinymasu')">
             <img :src="'/shinymasu/シャニマス-logo.png'" alt="シャニマス" class="project-logo" draggable="false" />
-            <div class="project-name">シャニマス</div>
           </div>
         </div>
       </div>
@@ -371,6 +373,13 @@ export default {
         return value === 'true';
       }
       return defaultValue;
+    },
+    // 导航栏滚轮横向滚动（不改变图标尺寸，仅滚动查看）
+    onNavWheel(e) {
+      const el = this.$refs.navScroll;
+      if (!el) return;
+      const amount = 120;
+      el.scrollLeft += (e.deltaY > 0 ? amount : -amount);
     },
     // 导航栏滚轮横向滚动
     onNavWheel(e) {
@@ -1161,6 +1170,11 @@ export default {
 </script>
 <!--*****************************************************************************************************************-->
 <style scoped>
+
+/* 导航栏中间成员列表滚动容器（不影响图标尺寸） */
+.nav-scroll { flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.nav-scroll::-webkit-scrollbar { display: none; }
+.nav-members { display: inline-flex; align-items: center; }
 
 /* 恢复为默认导航样式，无额外自定义容器 */
 
@@ -1995,11 +2009,11 @@ html, body, #app {  /*清除自带外边框*/
 .project-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px) saturate(1.5); -webkit-backdrop-filter: blur(12px) saturate(1.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .project-modal-content { width: 75vw; height: 70vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); overflow: hidden; display: flex; flex-direction: column; position: relative; }
 .project-modal-content::before { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 1; border-radius: 16px; pointer-events: none; }
-.project-header { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); border-bottom: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); padding: 20px 24px; display: flex; align-items: center; justify-content: center; border-radius: 16px 16px 0 0; position: relative; z-index: 2; color: #fff; font-weight: 600; }
+.project-header { background: transparent; border: none; box-shadow: none; padding: 0; height: 0; display: block; position: relative; z-index: 2; }
 .project-back-btn { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; cursor: pointer; transition: all 0.3s ease; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; z-index: 3; }
 .project-back-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-50%) scale(1.08); }
 .project-back-btn .back-icon { width: 20px; height: 20px; filter: brightness(0) invert(1); }
-.project-grid { flex: 1; position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); }
+.project-grid { flex: 1; position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); place-content: center; align-content: center; justify-items: center; align-items: center; }
 .project-item { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
 .project-item:hover { transform: translateY(-3px) scale(1.02); background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(22px) saturate(1.8); -webkit-backdrop-filter: blur(22px) saturate(1.8); border-color: rgba(255, 255, 255, 0.5); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25), 0 0 20px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 .project-item.active { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35) inset; }

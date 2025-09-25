@@ -2362,7 +2362,7 @@ html, body, #app {  /*清除自带外边框*/
 /* 本地图库弹窗毛玻璃风格（与其他模态保持一致） */
 .gallery-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px) saturate(1.5); -webkit-backdrop-filter: blur(12px) saturate(1.5); display: flex; align-items: center; justify-content: center; z-index: 9999; }
 .gallery-modal-content { width: 85vw; height: 85vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); overflow: hidden; display: flex; flex-direction: column; position: relative; }
-.gallery-modal-content::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); z-index: 1; border-radius: 16px; }
+.gallery-modal-content::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); z-index: 1; border-radius: 16px; pointer-events: none; }
 .gallery-header { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px) saturate(1.8); -webkit-backdrop-filter: blur(20px) saturate(1.8); border-bottom: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-radius: 16px 16px 0 0; position: relative; z-index: 2; }
 .gallery-title-header { color: #fff; font-weight: 600; font-size: 18px; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); margin: 0; flex: 1; text-align: center; }
 .gallery-back-btn { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; cursor: pointer; transition: all 0.3s ease; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-right: 12px; z-index: 10; position: relative; }
@@ -2375,9 +2375,9 @@ html, body, #app {  /*清除自带外边框*/
 .gallery-actions { display: flex; gap: 8px; margin-bottom: 12px; }
 
 /* 版本更新信息排版 */
-.version-body { flex: 1; padding: 24px; overflow: auto; color: #fff; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); }
-.version-card { max-width: 920px; margin: 0 auto; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; padding: 20px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25); }
-.version-pre { white-space: pre-wrap; line-height: 1.8; font-size: 14px; letter-spacing: 0.2px; color: #f5f7ff; text-shadow: 0 1px 2px rgba(0,0,0,0.35); margin: 0; }
+.version-body { flex: 1; padding: 24px; overflow: auto; color: #fff; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px) saturate(1.5); -webkit-backdrop-filter: blur(15px) saturate(1.5); position: relative; z-index: 2; }
+.version-card { max-width: 920px; margin: 0 auto; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; padding: 20px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25); position: relative; z-index: 2; }
+.version-pre { white-space: pre-wrap; line-height: 1.8; font-size: 14px; letter-spacing: 0.2px; color: #f5f7ff; text-shadow: 0 1px 2px rgba(0,0,0,0.35); margin: 0; user-select: text; cursor: text; }
 .version-pre::selection { background: rgba(255,255,255,0.2); }
 
 </style>

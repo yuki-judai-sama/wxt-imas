@@ -359,7 +359,7 @@ export default {
       imageLoadErrors: {},
       settingsListener: null,
       customBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL) || null,
-      localGalleryBgUrl: storage.get(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL) || null,
+      localGalleryBgUrl: null, // 将在 mounted 中通过恢复逻辑设置
       hasUnreadTweets: false, // 是否有未读推文
       
       // 界面显示控制
@@ -995,6 +995,15 @@ export default {
       const url = typeof img === 'string' ? img : (img && img.url);
       if (!url) return;
       try {
+        // 存储文件引用信息而不是 Blob URL
+        const fileInfo = {
+          fileName: img.name || 'unknown',
+          fileId: img.id || (img.name + '_' + Date.now()), // 使用文件ID而不是句柄
+          timestamp: Date.now()
+        };
+        console.log('设置本地图库背景，存储的fileInfo:', fileInfo);
+        storage.set(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_FILE_INFO, fileInfo);
+        // 同时存储当前的 Blob URL 用于立即显示
         storage.set(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL, url);
         this.localGalleryBgUrl = url;
         this.updateCustomBackground();
@@ -1005,12 +1014,80 @@ export default {
     // 取消使用本地图库背景
     cancelLocalGalleryBackground() {
       try {
-        storage.remove(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL);
-        this.localGalleryBgUrl = null;
+        this.clearInvalidBackgroundSettings();
         this.updateCustomBackground();
       } catch (e) {
         console.error('取消本地图库背景失败', e);
       }
+    },
+
+    // 从存储的文件信息恢复背景图 Blob URL
+    async restoreLocalGalleryBackground() {
+      try {
+        const fileInfo = storage.get(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_FILE_INFO);
+        console.log('尝试恢复本地图库背景，fileInfo:', fileInfo);
+        
+        if (!fileInfo || (!fileInfo.fileId && !fileInfo.fileName)) {
+          // 没有本地图库背景设置，直接返回成功
+          console.log('没有本地图库背景设置');
+          return Promise.resolve();
+        }
+
+        // 确保本地图库已加载
+        if (!this.localGalleryImages.length) {
+          await this.loadLocalGallery();
+        }
+
+        // 在本地图库中查找对应的文件
+        const targetImage = this.localGalleryImages.find(img => 
+          img.id === fileInfo.fileId || img.name === fileInfo.fileName
+        );
+
+        if (targetImage && targetImage.url) {
+          // 重新创建 Blob URL（因为原来的可能已失效）
+          try {
+            // 如果 targetImage.url 是 Blob URL，需要重新创建
+            if (targetImage.url.startsWith('blob:')) {
+              // 从文件句柄重新创建 Blob URL
+              if (targetImage.handle) {
+                const file = await targetImage.handle.getFile();
+                const newBlobUrl = URL.createObjectURL(file);
+                
+                // 更新存储的 URL
+                storage.set(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL, newBlobUrl);
+                this.localGalleryBgUrl = newBlobUrl;
+                
+                console.log('成功恢复本地图库背景图，新URL:', newBlobUrl);
+              } else {
+                throw new Error('文件句柄不可用');
+              }
+            } else {
+              // 直接使用 URL
+              storage.set(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL, targetImage.url);
+              this.localGalleryBgUrl = targetImage.url;
+            }
+          } catch (error) {
+            console.warn('无法重新创建背景图 Blob URL，清除设置:', error);
+            this.clearInvalidBackgroundSettings();
+            throw error; // 重新抛出错误
+          }
+        } else {
+          console.warn('在本地图库中找不到对应的背景图文件，清除设置');
+          this.clearInvalidBackgroundSettings();
+          throw new Error('找不到对应的背景图文件');
+        }
+      } catch (e) {
+        console.error('恢复本地图库背景失败:', e);
+        this.clearInvalidBackgroundSettings();
+        throw e; // 重新抛出错误
+      }
+    },
+
+    // 清除无效的背景图设置
+    clearInvalidBackgroundSettings() {
+      storage.remove(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL);
+      storage.remove(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_FILE_INFO);
+      this.localGalleryBgUrl = null;
     },
     
     // 关闭工具栏
@@ -1212,8 +1289,18 @@ export default {
     );
     this.handleToolbarButtonChange(showToolbar);
     // 首次渲染时加载本地图库背景并应用优先级
-    this.localGalleryBgUrl = storage.get(APP_CONFIG.STORAGE_KEYS.LOCAL_GALLERY_BG_URL) || null;
-    this.updateCustomBackground();
+    // 先尝试恢复本地图库背景图（处理 Blob URL 失效问题）
+    this.restoreLocalGalleryBackground().then(() => {
+      // 恢复成功或没有本地图库背景，更新背景
+      this.updateCustomBackground();
+    }).catch(() => {
+      // 如果恢复失败，检查是否有自定义背景图URL
+      const customBgUrl = storage.get(APP_CONFIG.STORAGE_KEYS.CUSTOM_BG_URL);
+      if (customBgUrl) {
+        this.customBgUrl = customBgUrl;
+      }
+      this.updateCustomBackground();
+    });
 
   },
   

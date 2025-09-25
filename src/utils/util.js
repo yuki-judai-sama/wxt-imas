@@ -118,11 +118,21 @@ export function isCardImgUrl(url) {
 // 存储工具函数
 export const storage = {
   get(key) {
-    return localStorage.getItem(key);
+    const value = localStorage.getItem(key);
+    if (value === null) return null;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value; // 如果不是JSON，返回原始字符串
+    }
   },
   
   set(key, value) {
-    localStorage.setItem(key, value);
+    if (typeof value === 'object') {
+      localStorage.setItem(key, JSON.stringify(value));
+    } else {
+      localStorage.setItem(key, value);
+    }
   },
   
   remove(key) {

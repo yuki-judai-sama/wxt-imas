@@ -14,6 +14,7 @@ export const APP_CONFIG = {
     DEFAULT_SEARCH_ENGINE: 'defaultSearchEngine',
     CUSTOM_BG_URL: 'customBgUrl',
     LOCAL_GALLERY_BG_URL: 'localGalleryBgUrl',
+    LOCAL_GALLERY_BG_FILE_INFO: 'localGalleryBgFileInfo',
     SHOW_TIME_DISPLAY: 'showTimeDisplay',
     SHOW_SEARCH_BOX: 'showSearchBox',
     SEARCH_BOX_SIZE: 'searchBoxSize',
